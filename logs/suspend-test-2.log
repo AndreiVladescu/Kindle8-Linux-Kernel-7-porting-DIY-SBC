@@ -1,0 +1,59 @@
+[   36.877908] PM: suspend entry (deep)
+[   36.898571] Filesystems sync: 0.020 seconds
+[   36.927853] Freezing user space processes
+[   36.929184] Freezing user space processes completed (elapsed 0.001 seconds)
+[   36.929221] OOM killer disabled.
+[   36.929231] Freezing remaining freezable tasks
+[   36.930510] Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+[   36.961280] GFP mask restricted
+[   37.490865] PM: suspend of devices complete after 526.364 msecs
+[   37.496903] PM: start suspend of devices complete after 536.074 msecs
+[   37.503379] PM: suspend devices took 0.540 seconds
+[   37.508240] PM: suspend debug: Waiting for 5 second(s).
+[   40.644374] ieee80211 phy0: brcmf_netdev_start_xmit: xmit rejected state=0
+[   42.764388] PM: resume of devices complete after 40.069 msecs
+[   42.770200] GFP mask restored
+[   42.773934] PM: resume devices took 0.040 seconds
+[   42.779462] OOM killer enabled.
+[   42.779509] Restarting tasks: Starting
+[   42.795361] Restarting tasks: Done
+[   42.795432] random: crng reseeded on system resumption
+[   42.825710] PM: suspend exit
+[   75.466488] PM: suspend entry (deep)
+[   75.488902] Filesystems sync: 0.022 seconds
+[   75.514400] Freezing user space processes
+[   75.515744] Freezing user space processes completed (elapsed 0.001 seconds)
+[   75.515781] OOM killer disabled.
+[   75.515791] Freezing remaining freezable tasks
+[   75.517085] Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+[   75.553492] GFP mask restricted
+[   76.079374] PM: suspend of devices complete after 522.713 msecs
+[   76.085411] PM: start suspend of devices complete after 532.410 msecs
+[   76.091889] PM: suspend devices took 0.530 seconds
+[   76.098408] PM: late suspend of devices complete after 1.650 msecs
+[   76.106534] PM: noirq suspend of devices complete after 1.675 msecs
+[   76.112920] Checking wakeup interrupts
+[   76.116697] Calling sched_clock_syscore_suspend+0x0/0x4
+[   76.121966] Calling timekeeping_syscore_suspend+0x0/0x4
+[   76.121966] Calling irq_gc_suspend+0x0/0x68
+[   76.121966] Calling fw_suspend+0x0/0x14
+[   76.121966] Calling mxc_gpio_syscore_suspend+0x0/0x60
+[   76.121966] Calling cpu_pm_suspend+0x0/0x18
+[   76.121966] PM: suspend debug: Waiting for 5 second(s).
+[   76.121966] Calling cpu_pm_resume+0x0/0x10
+[   76.121966] Calling mxc_gpio_syscore_resume+0x0/0x68
+[   76.121966] Calling irq_gc_resume+0x0/0x60
+[   76.121966] Calling irq_pm_syscore_resume+0x0/0x8
+[   76.121966] Calling timekeeping_syscore_resume+0x0/0x4
+[   76.121966] Calling sched_clock_syscore_resume+0x0/0x4
+[   76.123397] PM: noirq resume of devices complete after 1.371 msecs
+[   76.131082] PM: early resume of devices complete after 1.250 msecs
+[   76.145214] Timekeeping suspended for 4.022 seconds
+[   76.182611] PM: resume of devices complete after 45.226 msecs
+[   76.188424] GFP mask restored
+[   76.192914] PM: resume devices took 0.060 seconds
+[   76.197990] OOM killer enabled.
+[   76.198005] Restarting tasks: Starting
+[   76.201322] Restarting tasks: Done
+[   76.201391] random: crng reseeded on system resumption
+[   76.244128] PM: suspend exit

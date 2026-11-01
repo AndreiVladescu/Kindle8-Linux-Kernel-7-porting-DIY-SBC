@@ -1,0 +1,8 @@
+[  145.519227] PM: suspend entry (deep)
+[  145.520268] Filesystems sync: 0.000 seconds
+[  145.680196] Freezing user space processes
+[  145.681528] Freezing user space processes completed (elapsed 0.001 seconds)
+[  145.681566] OOM killer disabled.
+[  145.681575] Freezing remaining freezable tasks
+[  145.682868] Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+[  145.682900] printk: Suspending console(s) (use no_console_suspend to debug)

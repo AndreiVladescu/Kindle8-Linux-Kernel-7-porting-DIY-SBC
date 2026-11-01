@@ -1,0 +1,14 @@
+
+#################### stage.py run 22:09:49 -> logs/test-220949.log ####################
+
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: rebooting the Kindle over SSH
+----------------------------------------------------------------------
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>> ACTION: reset the Kindle now (USB unplugged, hold power until it restarts, release, replug). Waiting up to 600s
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+!!!!!!!!!! RUN STOPPED: 
+!! timeout waiting for [b'uboot > '] !!!!!!!!!!
+--- leave the Kindle alone; Claude will tell you what to do next

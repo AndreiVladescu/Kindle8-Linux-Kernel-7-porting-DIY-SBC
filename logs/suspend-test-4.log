@@ -1,0 +1,20 @@
+[  113.566980] PM: suspend entry (deep)
+[  113.567704] Filesystems sync: 0.000 seconds
+[  113.594365] Freezing user space processes
+[  113.595741] Freezing user space processes completed (elapsed 0.001 seconds)
+[  113.595780] OOM killer disabled.
+[  113.595790] Freezing remaining freezable tasks
+[  113.597114] Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+[  113.627686] GFP mask restricted
+[  114.147015] PM: suspend of devices complete after 516.081 msecs
+[  114.153058] PM: start suspend of devices complete after 525.862 msecs
+[  114.159535] PM: suspend devices took 0.530 seconds
+[  114.166039] PM: late suspend of devices complete after 1.631 msecs
+[  114.174127] PM: noirq suspend of devices complete after 1.632 msecs
+[  114.180442] Checking wakeup interrupts
+[  114.184209] Calling sched_clock_syscore_suspend+0x0/0x4
+[  114.189474] Calling timekeeping_syscore_suspend+0x0/0x4
+[  114.189474] Calling irq_gc_suspend+0x0/0x68
+[  114.189474] Calling fw_suspend+0x0/0x14
+[  114.189474] Calling mxc_gpio_syscore_suspend+0x0/0x60
+[  114.189474] Calling cpu_pm_suspend+0x0/0x18
