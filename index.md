@@ -472,6 +472,7 @@ the cracked band of the panel empty.
 | Function | Status |
 |---|---|
 | Boot | stock U-Boot → Linux 7.3.1 (uniprocessor, L2 on) → Alpine 3.24 on p4, SSH after about 20 s |
+| CPU | 396–996 MHz (cpufreq, ondemand); 1104 MHz overclock tested separately, see `docs/cpufreq.md` |
 | Storage | eMMC 8-bit HS-DDR; ext4 root, 2.7 GB free |
 | Network | WiFi (brcmfmac) with mDNS `kindle8.local`; USB Ethernet with automatic recovery |
 | Bluetooth | BCM43430A1 via hci_uart/btbcm, BlueZ |
@@ -487,19 +488,10 @@ web server all running.*
 
 ## Open items
 
-- The CPU runs at the 792 MHz U-Boot sets; the stock kernel ran at
-  996 MHz. cpufreq is disabled until the PMIC regulators are described
-  with real constraints.
-- The Bluetooth controller uses Broadcom's placeholder address
-  `43:43:A1:…`. The real address is in Amazon's idme area, which was not
-  read.
-- The WiFi and Bluetooth host-wake interrupts (`&gpio3 31`, `&gpio3 29`)
-  are not wired; the WiFi interrupt is in-band.
-- The battery OCV table needs calibration from a full discharge.
-- No suspend.
-- Display: the EPDC pixel clock runs at 22.5 MHz instead of 25.26 MHz, there is no
-  EPD thermal zone yet (the driver uses 20 °C), and the text console should be removed
-  from the kernel instead of being detached at runtime.
+- The battery OCV table needs calibration from a full discharge (logger and table builder are in place, see `docs/battery.md`).
+- Suspend: drivers and everything up to the final sleep pass `pm_test` (`devices`, `core`), but real
+  deep suspend (`mem`) never wakes: it stops after `cpu_pm_suspend`, where the SoC asserts `PMIC_STBY_REQ`.
+  The BD71815 suspend-state configuration is the likely cause. `standby` and `s2idle` are untested.
 
 ## Reproducing
 
