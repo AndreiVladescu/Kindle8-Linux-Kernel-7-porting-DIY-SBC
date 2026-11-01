@@ -4,3 +4,4 @@ extracted/
 *.img
 build/
 logs/live.log
+__pycache__/

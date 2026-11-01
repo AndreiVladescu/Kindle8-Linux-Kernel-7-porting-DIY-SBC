@@ -400,6 +400,12 @@ came back in 59 seconds.
 | Power | BD71815: RTC, charger and battery readings, capacity estimate; regulators read-only |
 | Watchdog | imx2_wdt |
 
+<img src="./img/htop.png" width="100%" alt="htop on the Kindle: 20.8 MB of 495 MB RAM in use, load 0.40, with wpa_supplicant, udhcpc, dbus, avahi, bluetoothd, chronyd, dropbear, getty, usb-link-watchdog and the Python web server running">
+
+*`htop` on the running system: about 21 MB of 495 MB RAM in use with WiFi,
+Bluetooth, mDNS, chrony, dropbear, the USB link watchdog and the port 80
+web server all running.*
+
 ## Open items
 
 - The CPU runs at the 792 MHz U-Boot sets; the stock kernel ran at
