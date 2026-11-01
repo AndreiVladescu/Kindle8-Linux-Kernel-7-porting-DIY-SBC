@@ -1,0 +1,25 @@
+#!/sbin/openrc-run
+description="E-ink status screen (device stats on the Kindle's panel, every 5 min)"
+command=/usr/bin/python3
+command_args="/usr/local/bin/kindle-eink.py"
+supervisor=supervise-daemon
+output_logger="logger -t kindle-eink"
+error_logger="logger -t kindle-eink"
+
+depend() {
+	need kindle-web
+	after modules
+}
+
+start_pre() {
+	# display drivers (also listed in /etc/modules)
+	modprobe -q fp9928 && modprobe -q mxc_epdc_drm || return 1
+	local i=0
+	while [ ! -e /dev/fb0 ] && [ $i -lt 20 ]; do sleep 0.5; i=$((i + 1)); done
+	[ -e /dev/fb0 ] || { eerror "no /dev/fb0"; return 1; }
+	# detach the text console: its cursor would refresh the panel forever and keep HV/VCOM on
+	for v in /sys/class/vtconsole/vtcon*; do
+		grep -q "frame buffer" "$v/name" 2>/dev/null && echo 0 > "$v/bind"
+	done
+	return 0
+}

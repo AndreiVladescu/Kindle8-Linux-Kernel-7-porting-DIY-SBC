@@ -110,3 +110,15 @@ CMA for the EPDC (`cma=` / CONFIG_CMA), first image.
   EPDC IRQs counting (463 after the first test pattern). Pixel clock 22.5 MHz instead of 25.263 MHz (clock tree).
 - Load order by hand: `modprobe fp9928; modprobe mxc_epdc_drm`. fbcon attaches to fb0.
 - Open: visual confirmation on the glass; rails stay enabled after updates (power-down policy); pix clock parent.
+
+## Status screen (2026-11-01)
+`host/kindle-rootfs/usr/local/bin/kindle-eink.py` + OpenRC service `kindle-eink` (runlevel default):
+renders hostname, IP, uptime, load, memory, disk, SoC temperature, battery and WiFi signal (from the web server's
+`/status.json`) as a portrait 600×800 image with Pillow + DejaVu (`apk add py3-pillow font-dejavu`), rotates it with
+`ROTATE_90` (portrait (px,py) → fb (py, 599−px), derived from the test-pattern photo) and writes XRGB8888 to `/dev/fb0`
+every 5 minutes (`EINK_INTERVAL`).
+- `fp9928` and `mxc_epdc_drm` are in `/etc/modules`; the service also loads them.
+- **fbcon must be detached** from fb0 (the service does `echo 0 > /sys/class/vtconsole/vtconN/bind`): the blinking
+  cursor otherwise refreshes the panel continuously (7 000+ EPDC IRQs) and keeps HV/VCOM on. With it detached, one
+  update costs 2 IRQs and the driver's power-down (pwrdown_delay 0) switches `epd-vposneg`/`epd-vcom` off right after.
+  TODO: drop `CONFIG_FRAMEBUFFER_CONSOLE` at the next kernel build.
