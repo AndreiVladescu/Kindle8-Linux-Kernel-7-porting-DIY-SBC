@@ -1,0 +1,10 @@
+#!/bin/sh
+# Log battery state every 60 s to /var/log/battery.csv for OCV-table calibration (docs/battery.md).
+# Columns: unix_time,status,voltage_uV,current_avg_uA,capacity_pct,temp_c
+B=/sys/class/power_supply/bd71828_bat
+F=/var/log/battery.csv
+[ -s $F ] || echo "unix_time,status,voltage_uV,current_avg_uA,capacity_pct,temp_c" > $F
+while :; do
+	echo "$(date +%s),$(cat $B/status),$(cat $B/voltage_now),$(cat $B/current_avg),$(cat $B/capacity 2>/dev/null),$(cat $B/temp)" >> $F
+	sleep 60
+done

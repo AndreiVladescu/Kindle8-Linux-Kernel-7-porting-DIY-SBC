@@ -14,3 +14,11 @@ Upstream quirk found on the way: `bd71815_get_temp()` returns whole °C while th
 path) uses tenths, so `TEMP=29` means 29 °C here, not 2.9 °C. The patch handles both for the OCV lookup only.
 
 Better later: calibrate the OCV table from a full discharge log; or use the PMIC's coulomb counter.
+
+## Calibrating the OCV table
+`battery-log` (OpenRC service, `host/kindle-rootfs/usr/local/bin/battery-log`) appends one line per minute to
+`/var/log/battery.csv`: time, status, voltage, averaged current, current estimate, temperature.
+1. Charge to Full, unplug USB, leave the Kindle running its normal load until it shuts down.
+2. Boot again, copy the log: `scp root@kindle8.local:/var/log/battery.csv .`
+3. `tools/battery-ocv.py battery.csv` prints `charge-full-design-microamp-hours` and an `ocv-capacity-table-0`
+   (5 % steps, IR-compensated with Ri) to paste into the `battery` node of the DTS.

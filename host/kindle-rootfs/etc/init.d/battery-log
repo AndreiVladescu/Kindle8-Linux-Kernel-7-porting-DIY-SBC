@@ -1,0 +1,4 @@
+#!/sbin/openrc-run
+description="Log battery voltage/current every minute (OCV calibration data)"
+command=/usr/local/bin/battery-log
+supervisor=supervise-daemon
