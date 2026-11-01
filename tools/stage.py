@@ -128,6 +128,8 @@ def get_uboot(reboot):
         s.write(b'\x03\r')
     if reboot:
         hands_off('rebooting it from the shell — no button needed')
+    elif a.ssh_reboot:
+        hands_off('rebooted over SSH — waiting for U-Boot on the serial line, no button needed')
     else:
         action(f'reset the Kindle now (USB unplugged, hold power until it restarts, release, replug). Waiting up to {a.wait_uboot:.0f}s')
     t0 = time.time()
