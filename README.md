@@ -35,6 +35,16 @@ tools/test-kernel.sh [--promote]      # needs the serial console for the test bo
 
 Boot slots and recovery: [`docs/boot-slots.md`](docs/boot-slots.md).
 
+## License
+
+GPL-3.0-or-later, see [`LICENSE`](LICENSE). Exceptions, kept compatible with
+the Linux kernel: `kernel/imx6sl-amazon-heisenberg.dts` is
+`(GPL-2.0+ OR MIT)` as stated in its SPDX header, and
+`kernel/patches/0001-power-bd71828-report-capacity-from-ocv-table.patch`
+modifies a `GPL-2.0-or-later` kernel file and stays under that license.
+Third-party firmware (Amazon, Broadcom/Cypress) is not part of this
+repository and is not covered.
+
 ## Notes
 
 All work was done on hardware owned by the author. No Amazon binaries or
