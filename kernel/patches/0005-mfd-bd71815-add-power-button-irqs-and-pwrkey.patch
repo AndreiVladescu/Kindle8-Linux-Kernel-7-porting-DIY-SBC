@@ -1,0 +1,59 @@
+diff --git a/drivers/mfd/rohm-bd71828.c b/drivers/mfd/rohm-bd71828.c
+index bf4df8e1b..280944aee 100644
+--- a/drivers/mfd/rohm-bd71828.c
++++ b/drivers/mfd/rohm-bd71828.c
+@@ -514,6 +514,10 @@ static const struct regmap_irq bd71815_irqs[] = {
+ 	REGMAP_IRQ_REG(BD71815_INT_DCIN_MON_RES, 2, BD71815_INT_DCIN_MON_RES_MASK),
+ 	REGMAP_IRQ_REG(BD71815_INT_DCIN_MON_DET, 2, BD71815_INT_DCIN_MON_DET_MASK),
+ 	REGMAP_IRQ_REG(BD71815_INT_WDOG, 2, BD71815_INT_WDOG_MASK),
++	REGMAP_IRQ_REG(BD71815_INT_PWRON_LONG, 2, BD71815_INT_PWRON_LONG_MASK),
++	REGMAP_IRQ_REG(BD71815_INT_PWRON_MID, 2, BD71815_INT_PWRON_MID_MASK),
++	REGMAP_IRQ_REG(BD71815_INT_PWRON_SHORT, 2, BD71815_INT_PWRON_SHORT_MASK),
++	REGMAP_IRQ_REG(BD71815_INT_PWRON_PRESS, 2, BD71815_INT_PWRON_PRESS_MASK),
+ 	/* Vsys */
+ 	REGMAP_IRQ_REG(BD71815_INT_VSYS_UV_RES, 3, BD71815_INT_VSYS_UV_RES_MASK),
+ 	REGMAP_IRQ_REG(BD71815_INT_VSYS_UV_DET, 3, BD71815_INT_VSYS_UV_DET_MASK),
+@@ -947,12 +951,11 @@ static int bd71828_i2c_probe(struct i2c_client *i2c)
+ 		irqchip = &bd71815_irq_chip;
+ 		clkmode_reg = BD71815_REG_OUT32K;
+ 		/*
+-		 * If BD71817 support is needed we should be able to handle it
+-		 * with proper DT configs + BD71815 drivers + power-button.
+-		 * BD71815 data-sheet does not list the power-button IRQ so we
+-		 * don't use it.
++		 * The BD71815 data-sheet does not list the power-button IRQ, but
++		 * the vendor BD7181x driver (Amazon Kindle) reports PWRON events in
++		 * INT_STAT_03 bits 2-5; use the short push like the BD71828.
+ 		 */
+-		button_irq = 0;
++		button_irq = BD71815_INT_PWRON_SHORT;
+ 		break;
+ 	case ROHM_CHIP_TYPE_BD72720:
+ 	{
+diff --git a/include/linux/mfd/rohm-bd71815.h b/include/linux/mfd/rohm-bd71815.h
+index ec6d9612b..92ef0127d 100644
+--- a/include/linux/mfd/rohm-bd71815.h
++++ b/include/linux/mfd/rohm-bd71815.h
+@@ -406,6 +406,11 @@ enum {
+ 	BD71815_INT_DCIN_MON_RES,
+ 	BD71815_INT_DCIN_MON_DET,
+ 	BD71815_INT_WDOG,
++	/* Power button (INT_STAT_03 bits 2-5, from the vendor BD7181x driver) */
++	BD71815_INT_PWRON_LONG,
++	BD71815_INT_PWRON_MID,
++	BD71815_INT_PWRON_SHORT,
++	BD71815_INT_PWRON_PRESS,
+ 	/* Vsys INT_STAT_04 */
+ 	BD71815_INT_VSYS_UV_RES,
+ 	BD71815_INT_VSYS_UV_DET,
+@@ -482,6 +487,10 @@ enum {
+ #define BD71815_INT_DCIN_MON_RES_MASK			BIT(0)
+ #define BD71815_INT_DCIN_MON_DET_MASK			BIT(1)
+ #define BD71815_INT_WDOG_MASK				BIT(6)
++#define BD71815_INT_PWRON_LONG_MASK			BIT(2)
++#define BD71815_INT_PWRON_MID_MASK			BIT(3)
++#define BD71815_INT_PWRON_SHORT_MASK			BIT(4)
++#define BD71815_INT_PWRON_PRESS_MASK			BIT(5)
+ 
+ #define BD71815_INT_VSYS_UV_RES_MASK			BIT(0)
+ #define BD71815_INT_VSYS_UV_DET_MASK			BIT(1)
