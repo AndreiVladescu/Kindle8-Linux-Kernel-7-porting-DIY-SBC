@@ -1,0 +1,390 @@
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 89789ac7a..eb1b1f285 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -500,6 +500,14 @@ config REGULATOR_ISL6271A
+ 	help
+ 	  This driver supports ISL6271A voltage regulator chip.
+ 
++config REGULATOR_FP9928
++	tristate "FitiPower FP9928 EPD PMIC"
++	depends on I2C && GPIOLIB
++	select REGMAP_I2C
++	help
++	  Support for the FitiPower FP9928 e-paper display PMIC (HV rails,
++	  VCOM and panel temperature), as used in the Amazon Kindle 8.
++
+ config REGULATOR_FP9931
+ 	tristate "FitiPower FP9931/JD9930 EPD regulator"
+ 	depends on I2C
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 5a764cec8..006dd293a 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -59,6 +59,7 @@ obj-$(CONFIG_REGULATOR_HI6421V600) += hi6421v600-regulator.o
+ obj-$(CONFIG_REGULATOR_HI655X) += hi655x-regulator.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_ISL9305) += isl9305.o
++obj-$(CONFIG_REGULATOR_FP9928)	+= fp9928.o
+ obj-$(CONFIG_REGULATOR_FP9931) += fp9931.o
+ obj-$(CONFIG_REGULATOR_LM363X) += lm363x-regulator.o
+ obj-$(CONFIG_REGULATOR_LOCHNAGAR) += lochnagar-regulator.o
+diff --git a/drivers/regulator/fp9928.c b/drivers/regulator/fp9928.c
+new file mode 100644
+index 000000000..343d3f15a
+--- /dev/null
++++ b/drivers/regulator/fp9928.c
+@@ -0,0 +1,353 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * FitiPower FP9928 EPD PMIC: e-paper high-voltage rails, VCOM and panel temperature.
++ *
++ * Register use and power sequence follow the vendor driver of the Amazon Kindle 8
++ * (Lab126 mxc_epdc_fb.c, GPL release 5.16.2.1.1):
++ *   - EN switches the whole chip (and the +/- high-voltage rails). While EN is low the
++ *     chip is not reachable on I2C and forgets its settings, so VCOM is rewritten
++ *     after every power-up.
++ *   - A second GPIO (ENOP) switches the VCOM output; it is only raised while EN is high.
++ *   - Register 0x00: TMST_VALUE, signed degC from the panel thermistor.
++ *   - Register 0x02: VCOM, uV = 64000 + 21000 * value (vendor: 116 = 2.50 V).
++ * No other register is written: the FP9928 rail voltage setting is not documented here
++ * and differs from the FP9931 (whose VCOM register is 0x01).
++ */
++
++#include <linux/delay.h>
++#include <linux/gpio/consumer.h>
++#include <linux/hwmon.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/regmap.h>
++#include <linux/regulator/consumer.h>
++#include <linux/regulator/driver.h>
++
++#define FP9928_REG_TMST_VALUE	0x00
++#define FP9928_REG_VCOM		0x02
++
++#define FP9928_VCOM_MIN_UV	64000
++#define FP9928_VCOM_STEP_UV	21000
++#define FP9928_VCOM_DEFAULT_SEL	116	/* 2.50 V, power-on default */
++
++struct fp9928 {
++	struct device *dev;
++	struct regmap *regmap;
++	struct regulator *vin;
++	struct gpio_desc *en_gpio;
++	struct gpio_desc *vcom_gpio;
++	struct mutex lock;		/* protects everything below */
++	unsigned int en_users;
++	unsigned int vcom_sel;
++	bool vposneg_on;
++	bool vcom_on;
++};
++
++/* EN on (refcounted): chip + HV rails up, VCOM setting restored */
++static int fp9928_power_get(struct fp9928 *fp)
++{
++	int ret;
++
++	if (fp->en_users++)
++		return 0;
++
++	if (fp->vin) {
++		ret = regulator_enable(fp->vin);
++		if (ret) {
++			fp->en_users--;
++			return ret;
++		}
++	}
++
++	gpiod_set_value_cansleep(fp->en_gpio, 1);
++	usleep_range(2000, 3000);	/* vendor waits 1 ms for the chip to become ready */
++
++	ret = regmap_write(fp->regmap, FP9928_REG_VCOM, fp->vcom_sel);
++	if (ret)
++		dev_warn(fp->dev, "restoring VCOM failed: %d\n", ret);
++
++	return 0;
++}
++
++static void fp9928_power_put(struct fp9928 *fp)
++{
++	if (WARN_ON(!fp->en_users) || --fp->en_users)
++		return;
++
++	gpiod_set_value_cansleep(fp->en_gpio, 0);
++	if (fp->vin)
++		regulator_disable(fp->vin);
++}
++
++/* --- "vposneg": the +/- HV rails, switched by EN (consumer name in EPDC binding: DISPLAY) */
++
++static int fp9928_vposneg_enable(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++	int ret = 0;
++
++	mutex_lock(&fp->lock);
++	if (!fp->vposneg_on) {
++		ret = fp9928_power_get(fp);
++		if (!ret)
++			fp->vposneg_on = true;
++	}
++	mutex_unlock(&fp->lock);
++
++	return ret;
++}
++
++static int fp9928_vposneg_disable(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++
++	mutex_lock(&fp->lock);
++	if (fp->vposneg_on) {
++		fp->vposneg_on = false;
++		fp9928_power_put(fp);
++	}
++	mutex_unlock(&fp->lock);
++
++	return 0;
++}
++
++static int fp9928_vposneg_is_enabled(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++
++	return fp->vposneg_on;
++}
++
++static const struct regulator_ops fp9928_vposneg_ops = {
++	.enable = fp9928_vposneg_enable,
++	.disable = fp9928_vposneg_disable,
++	.is_enabled = fp9928_vposneg_is_enabled,
++};
++
++/* --- "vcom": voltage in reg 0x02, output switched by ENOP (needs EN) */
++
++static int fp9928_vcom_enable(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++	int ret = 0;
++
++	mutex_lock(&fp->lock);
++	if (!fp->vcom_on) {
++		ret = fp9928_power_get(fp);
++		if (!ret) {
++			gpiod_set_value_cansleep(fp->vcom_gpio, 1);
++			fp->vcom_on = true;
++		}
++	}
++	mutex_unlock(&fp->lock);
++
++	return ret;
++}
++
++static int fp9928_vcom_disable(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++
++	mutex_lock(&fp->lock);
++	if (fp->vcom_on) {
++		gpiod_set_value_cansleep(fp->vcom_gpio, 0);
++		fp->vcom_on = false;
++		fp9928_power_put(fp);
++	}
++	mutex_unlock(&fp->lock);
++
++	return 0;
++}
++
++static int fp9928_vcom_is_enabled(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++
++	return fp->vcom_on;
++}
++
++static int fp9928_vcom_set_voltage_sel(struct regulator_dev *rdev, unsigned int sel)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++	int ret = 0;
++
++	mutex_lock(&fp->lock);
++	fp->vcom_sel = sel;
++	if (fp->en_users)		/* chip is on: apply now, otherwise at next power-up */
++		ret = regmap_write(fp->regmap, FP9928_REG_VCOM, sel);
++	mutex_unlock(&fp->lock);
++
++	return ret;
++}
++
++static int fp9928_vcom_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct fp9928 *fp = rdev_get_drvdata(rdev);
++
++	return fp->vcom_sel;
++}
++
++static const struct regulator_ops fp9928_vcom_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
++	.set_voltage_sel = fp9928_vcom_set_voltage_sel,
++	.get_voltage_sel = fp9928_vcom_get_voltage_sel,
++	.enable = fp9928_vcom_enable,
++	.disable = fp9928_vcom_disable,
++	.is_enabled = fp9928_vcom_is_enabled,
++};
++
++static const struct regulator_desc fp9928_regulators[] = {
++	{
++		.name = "vposneg",
++		.of_match = of_match_ptr("vposneg"),
++		.regulators_node = of_match_ptr("regulators"),
++		.id = 0,
++		.ops = &fp9928_vposneg_ops,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++	},
++	{
++		.name = "vcom",
++		.of_match = of_match_ptr("vcom"),
++		.regulators_node = of_match_ptr("regulators"),
++		.id = 1,
++		.ops = &fp9928_vcom_ops,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.n_voltages = 256,
++		.min_uV = FP9928_VCOM_MIN_UV,
++		.uV_step = FP9928_VCOM_STEP_UV,
++	},
++};
++
++/* --- temperature: like the vendor get_display_temp(), pulse EN if the chip is off */
++
++static int fp9928_hwmon_read(struct device *dev, enum hwmon_sensor_types type,
++			     u32 attr, int channel, long *temp)
++{
++	struct fp9928 *fp = dev_get_drvdata(dev);
++	unsigned int val;
++	int ret;
++
++	mutex_lock(&fp->lock);
++	ret = fp9928_power_get(fp);
++	if (!ret) {
++		ret = regmap_read(fp->regmap, FP9928_REG_TMST_VALUE, &val);
++		fp9928_power_put(fp);
++	}
++	mutex_unlock(&fp->lock);
++
++	if (!ret)
++		*temp = (s8)val * 1000;
++	return ret;
++}
++
++static umode_t fp9928_hwmon_is_visible(const void *data, enum hwmon_sensor_types type,
++				       u32 attr, int channel)
++{
++	return 0444;
++}
++
++static const struct hwmon_channel_info * const fp9928_hwmon_info[] = {
++	HWMON_CHANNEL_INFO(chip, HWMON_C_REGISTER_TZ),
++	HWMON_CHANNEL_INFO(temp, HWMON_T_INPUT),
++	NULL
++};
++
++static const struct hwmon_ops fp9928_hwmon_ops = {
++	.is_visible = fp9928_hwmon_is_visible,
++	.read = fp9928_hwmon_read,
++};
++
++static const struct hwmon_chip_info fp9928_chip_info = {
++	.ops = &fp9928_hwmon_ops,
++	.info = fp9928_hwmon_info,
++};
++
++static const struct regmap_config fp9928_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = 0x0f,
++	.cache_type = REGCACHE_NONE,	/* chip loses state whenever EN is low */
++};
++
++static int fp9928_probe(struct i2c_client *client)
++{
++	struct device *dev = &client->dev;
++	struct regulator_config config = { };
++	struct fp9928 *fp;
++	int i;
++
++	fp = devm_kzalloc(dev, sizeof(*fp), GFP_KERNEL);
++	if (!fp)
++		return -ENOMEM;
++
++	fp->dev = dev;
++	fp->vcom_sel = FP9928_VCOM_DEFAULT_SEL;
++	mutex_init(&fp->lock);
++	i2c_set_clientdata(client, fp);
++
++	fp->regmap = devm_regmap_init_i2c(client, &fp9928_regmap_config);
++	if (IS_ERR(fp->regmap))
++		return dev_err_probe(dev, PTR_ERR(fp->regmap), "regmap init failed\n");
++
++	fp->vin = devm_regulator_get_optional(dev, "vin");
++	if (IS_ERR(fp->vin)) {
++		if (PTR_ERR(fp->vin) != -ENODEV)
++			return dev_err_probe(dev, PTR_ERR(fp->vin), "vin supply\n");
++		fp->vin = NULL;
++	}
++
++	/* both outputs low, as the vendor gpio_epd_init_pins() does */
++	fp->vcom_gpio = devm_gpiod_get(dev, "vcom-enable", GPIOD_OUT_LOW);
++	if (IS_ERR(fp->vcom_gpio))
++		return dev_err_probe(dev, PTR_ERR(fp->vcom_gpio), "vcom-enable gpio\n");
++
++	fp->en_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_LOW);
++	if (IS_ERR(fp->en_gpio))
++		return dev_err_probe(dev, PTR_ERR(fp->en_gpio), "enable gpio\n");
++
++	config.dev = dev;
++	config.driver_data = fp;
++	config.regmap = fp->regmap;
++
++	for (i = 0; i < ARRAY_SIZE(fp9928_regulators); i++) {
++		struct regulator_dev *rdev;
++
++		rdev = devm_regulator_register(dev, &fp9928_regulators[i], &config);
++		if (IS_ERR(rdev))
++			return dev_err_probe(dev, PTR_ERR(rdev), "register %s\n",
++					     fp9928_regulators[i].name);
++	}
++
++	if (IS_REACHABLE(CONFIG_HWMON)) {
++		struct device *hwmon;
++
++		hwmon = devm_hwmon_device_register_with_info(dev, "fp9928", fp,
++							     &fp9928_chip_info, NULL);
++		if (IS_ERR(hwmon))
++			dev_notice(dev, "hwmon registration failed\n");
++	}
++
++	return 0;
++}
++
++static const struct of_device_id fp9928_of_match[] = {
++	{ .compatible = "fitipower,fp9928" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, fp9928_of_match);
++
++static struct i2c_driver fp9928_driver = {
++	.driver = {
++		.name = "fp9928",
++		.of_match_table = fp9928_of_match,
++	},
++	.probe = fp9928_probe,
++};
++module_i2c_driver(fp9928_driver);
++
++MODULE_DESCRIPTION("FitiPower FP9928 EPD PMIC driver");
++MODULE_LICENSE("GPL");

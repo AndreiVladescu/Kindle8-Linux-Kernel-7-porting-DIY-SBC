@@ -127,6 +127,13 @@
 		>;
 	};
 
+	pinctrl_epdpmic: epdpmicgrp {
+		fsl,pins = <
+			MX6SL_PAD_KEY_ROW0__GPIO3_IO25              0x100b0	/* PM_EPD_EN, Amazon DTS value */
+			MX6SL_PAD_KEY_ROW1__GPIO3_IO27              0x100b0	/* PM_EPD_ENOP */
+		>;
+	};
+
 	pinctrl_pmic: pmicgrp {
 		fsl,pins = <
 			MX6SL_PAD_FEC_MDIO__GPIO4_IO20              0x4100b0	/* BD71815 INTB, stock hoggrp value */
@@ -239,10 +246,46 @@
 		#gpio-cells = <2>;
 
 		regulators {
+			/* Only LDO5 is described: logic supply of the e-paper path ("ldo5-disp" in
+			 * the vendor driver). Pinned to the 1.8 V U-Boot leaves and never switched off. */
+			ldo5_reg: ldo5 {
+				regulator-name = "ldo5-disp";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
 		};
 	};
 
-	/* fp9928@48: e-ink panel PMIC — screen is broken, not described */
+	/*
+	 * FitiPower FP9928 EPD PMIC (register map and sequence from the Lab126 driver, see
+	 * docs/display.md). Only reachable on I2C while PM_EPD_EN is high.
+	 */
+	epd_pmic: pmic@48 {
+		compatible = "fitipower,fp9928";
+		reg = <0x48>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_epdpmic>;
+		enable-gpios = <&gpio3 25 GPIO_ACTIVE_HIGH>;		/* PM_EPD_EN */
+		vcom-enable-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>;	/* PM_EPD_ENOP */
+		vin-supply = <&ldo5_reg>;
+		#thermal-sensor-cells = <0>;
+
+		regulators {
+			epd_vposneg: vposneg {
+				regulator-name = "epd-vposneg";
+			};
+
+			/* panel VCOM 2860 mV (idme) -> vendor steps 133 -> 64000 + 133 * 21000 uV */
+			epd_vcom: vcom {
+				regulator-name = "epd-vcom";
+				regulator-min-microvolt = <2857000>;
+				regulator-max-microvolt = <2857000>;
+			};
+		};
+	};
+
 };
 
 &usdhc1 {
