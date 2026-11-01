@@ -36,6 +36,8 @@ Shoutout to the guys at [ebookrepairs.com](https://ebookrepairs.com/kindle-tips/
 
 ## Serial console and a root shell
 
+While trying out the board, I hooked up my trusty Saleae Logic analyzer to take a look how the board boots up. After establishing the baudrate, I used the [ESP32 Bit Pirate](https://github.com/geo-tp/ESP32-Bit-Pirate) with the [Dock](https://github.com/AndreiVladescu/ESP32-Bit-Pirate-Hardware) in order to to "talk" to the SoC at 1.8V. **Be very careful not to connect a 3.3V to it! It may permanently destroy the SoC!**
+
 The board exposes `ttymxc0` at 115200 8N1 on test pads near the top edge.
 It was connected through an ESP32-based Bus Pirate running as a UART bridge,
 which shows up on the PC as `/dev/ttyACM0`. Pressing a key during the
