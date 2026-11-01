@@ -127,6 +127,26 @@
 		>;
 	};
 
+	pinctrl_epdc: epdcgrp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_D0__EPDC_DATA00             0x4110a1
+			MX6SL_PAD_EPDC_D1__EPDC_DATA01             0x4110a1
+			MX6SL_PAD_EPDC_D2__EPDC_DATA02             0x4110a1
+			MX6SL_PAD_EPDC_D3__EPDC_DATA03             0x4110a1
+			MX6SL_PAD_EPDC_D4__EPDC_DATA04             0x4110a1
+			MX6SL_PAD_EPDC_D5__EPDC_DATA05             0x4110a1
+			MX6SL_PAD_EPDC_D6__EPDC_DATA06             0x4110a1
+			MX6SL_PAD_EPDC_D7__EPDC_DATA07             0x4110a1
+			MX6SL_PAD_EPDC_GDCLK__EPDC_GDCLK           0x4110a0
+			MX6SL_PAD_EPDC_GDSP__EPDC_GDSP             0x4110a0
+			MX6SL_PAD_EPDC_GDOE__EPDC_GDOE             0x4110a0
+			MX6SL_PAD_EPDC_SDCLK__EPDC_SDCLK_P         0x4110a9
+			MX6SL_PAD_EPDC_SDOE__EPDC_SDOE             0x4110a9
+			MX6SL_PAD_EPDC_SDLE__EPDC_SDLE             0x4110a1
+			MX6SL_PAD_EPDC_SDCE0__EPDC_SDCE0           0x4110a0
+		>;
+	};
+
 	pinctrl_epdpmic: epdpmicgrp {
 		fsl,pins = <
 			MX6SL_PAD_KEY_ROW0__GPIO3_IO25              0x100b0	/* PM_EPD_EN, Amazon DTS value */
@@ -178,6 +198,44 @@
 	arm,prefetch-offset = <0>;
 	prefetch-data = <1>;
 	prefetch-instr = <1>;
+};
+
+/*
+ * EPDC driving the ED060SCSC1 (800x600) panel. Timing and EPDC parameters from the Lab126
+ * driver (eanab_mode / panel_modes[], material V220); Kemnade's mxc-epdc DRM driver.
+ */
+&epdc {
+	compatible = "fsl,imx6sl-epdc";
+	clocks = <&clks IMX6SL_CLK_EPDC_AXI>, <&clks IMX6SL_CLK_EPDC_PIX>;
+	clock-names = "epdc_axi", "epdc_pix";		/* names the driver requests */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_epdc>;
+	V3P3-supply = <&ldo5_reg>;
+	VCOM-supply = <&epd_vcom>;
+	DISPLAY-supply = <&epd_vposneg>;
+	vscan-holdoff = <4>;
+	sdoed-width = <10>;
+	sdoed-delay = <20>;
+	sdoez-width = <10>;
+	sdoez-delay = <20>;
+	gdclk-hp-offs = <392>;
+	gdsp-offs = <297>;
+	gdoe-offs = <0>;
+	gdclk-offs = <51>;
+	num-ce = <1>;
+	status = "okay";
+
+	timing {
+		clock-frequency = <25263158>;	/* vendor fb_videomode.pixclock, used as Hz */
+		hactive = <800>;
+		hback-porch = <20>;
+		hfront-porch = <57>;
+		hsync-len = <12>;
+		vactive = <600>;
+		vback-porch = <4>;
+		vfront-porch = <3>;
+		vsync-len = <1>;
+	};
 };
 
 &uart1 {

@@ -17,8 +17,6 @@ CONFIG_SOC_IMX6SL=y
 # Small image for serial upload
 CONFIG_KERNEL_XZ=y
 CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-# CONFIG_DRM is not set
-# CONFIG_FB is not set
 # CONFIG_SOUND is not set
 # CONFIG_SND is not set
 # CONFIG_MEDIA_SUPPORT is not set
@@ -96,3 +94,12 @@ CONFIG_FW_LOADER_COMPRESS_ZSTD=y
 # E-paper: FP9928 EPD PMIC (kernel/patches/0002), temperature via hwmon
 CONFIG_REGULATOR_FP9928=m
 CONFIG_HWMON=y
+
+# E-paper: i.MX EPDC DRM driver (Kemnade, ported; kernel/patches/0003) + fbdev emulation for /dev/fb0
+CONFIG_DRM=m
+CONFIG_DRM_MXC_EPDC=m
+CONFIG_FB=y
+CONFIG_FB_DEVICE=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_CMA=y
+CONFIG_DMA_CMA=y

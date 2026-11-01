@@ -98,3 +98,15 @@ later convert `V220_C295_BDCE01_ED060SCSC1_TC.wrf` (port the conversion from Ama
 
 **Remaining steps:** write fp9928.c + DT (test via `tools/test-kernel.sh`, serial needed), port mxc-epdc to 7.3,
 CMA for the EPDC (`cma=` / CONFIG_CMA), first image.
+
+## Phase 3 result (2026-11-01, kernel #14)
+- `kernel/patches/0003-drm-add-mxc-epdc-driver-ported-to-7.3.patch`: Kemnade's `kobo/epdc-drm-6.8` driver with three
+  7.3 API updates — `drm_fbdev_generic` → `drm_client_setup()` + `DRM_FBDEV_DMA_DRIVER_OPS`/`DRM_GEM_DMA_DRIVER_OPS`,
+  `struct drm_driver.date` removed, `platform_driver.remove` returns void; Kconfig `DRM_KMS_CMA_HELPER` → `DRM_GEM_DMA_HELPER`.
+- The driver requests clocks `epdc_axi`/`epdc_pix` (binding text says `axi`/`pix`); the DT follows the code.
+- Waveform: Amazon's `.wrf` **is already the EPDC .fw format** (same header as `epdc_builtin.fw`, trc=13 → 14 ranges
+  0–43 °C), so the panel's own `V220_C295_BDCE01_ED060SCSC1_TC.wrf` is installed unchanged as `/lib/firmware/imx/epdc/epdc.fw`.
+- Probe: `[drm] Initialized mxc_epdc 1.0.0`, `Mode: 800 x 600`, `fb0: mxc_epdcdrmfb`; HV + VCOM enabled via fp9928;
+  EPDC IRQs counting (463 after the first test pattern). Pixel clock 22.5 MHz instead of 25.263 MHz (clock tree).
+- Load order by hand: `modprobe fp9928; modprobe mxc_epdc_drm`. fbcon attaches to fb0.
+- Open: visual confirmation on the glass; rails stay enabled after updates (power-down policy); pix clock parent.
