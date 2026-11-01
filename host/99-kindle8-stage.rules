@@ -1,0 +1,3 @@
+# Kindle 8 RE: make ONLY the RAM-backed staging gadget (iSerialNumber=KINDLE8STAGE) writable by plugdev.
+# The real eMMC export ("Kindle Internal Storage", no such serial) is NOT matched and stays root-only.
+SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTRS{serial}=="KINDLE8STAGE", MODE="0660", GROUP="plugdev", SYMLINK+="kindle-stage", ENV{UDISKS_IGNORE}="1"

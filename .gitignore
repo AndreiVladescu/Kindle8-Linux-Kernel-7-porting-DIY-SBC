@@ -1,0 +1,6 @@
+# raw eMMC images contain personal data / device keys — never commit
+dumps/
+extracted/
+*.img
+build/
+logs/live.log

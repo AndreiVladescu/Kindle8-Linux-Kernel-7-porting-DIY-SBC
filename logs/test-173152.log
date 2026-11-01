@@ -1,0 +1,169 @@
+
+#################### stage.py run 17:31:52 -> logs/test-173152.log ####################
+
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: rebooting the Kindle over SSH
+----------------------------------------------------------------------
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>> ACTION: reset the Kindle now (USB unplugged, hold power until it restarts, release, replug). Waiting up to 600s
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                      
+Welcome to Alpine Linux 3.24
+Kernel 7.3.1-dirty on armv7l (/dev/ttymxc0)
+
+kindle8 login:   * Stopping dropbear ...  [ ok ]
+     * Stopping busybox syslog ... [ ok ]
+     * Stopping chronyd ...  [ ok ]
+                   * Unmounting loop devices
+ * Unmounting filesystems
+  *   Unmounting /tmp ... [ ok ]
+             * Setting hardware clock using the system clock [UTC] ...  [ ok ]
+        * Stopping busybox mdev .../usr/libexec/rc/sh/openrc-run.sh: line 38: can't create /proc/sys/kernel/hotplug: nonexistent directory
+ [ ok ]
+              * Terminating remaining processes ...  [ ok ]
+ * Killing remaining processes ...  [ ok ]
+    * Saving dependency cache ... [ ok ]
+    * Remounting remaining filesystems read-only ...  *   Remounting / read only ...  [ ok ]
+ [ ok ]
+ The system is going down NOW!
+Sent SIGTERM to all processes
+                    Sent SIGKILL to all processes
+Requesting system reboot
+                    [   54.236154] reboot: Restarting system
+
+
+U-Boot 2014.04 (Aug 01 2023 - 12:36:45)
+
+CPU:   Freescale i.MX6SL rev1.4 at 792 MHz
+CPU:   Temperature 35 C, calibration data: 0x5744ff5f
+Reset cause: WDOG
+FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+Board: Heisenberg
+Board Id: P0011XXXXXXXXXXX
+S/N: G000XXXXXXXXXXXX
+I2C:   ready
+DRAM:  MR5=0x6,MR6=0x3 512 MiB
+WARNING: Caches not enabled
+MMC:   FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+REBOOTMODE: 0
+using default bootcmdNormal Boot
+Hit any key to stop autoboot:  3  0 
+uboot >                
+uboot > 
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: U-Boot caught — script is driving the Kindle now
+----------------------------------------------------------------------
+run setmmcdev
+mmc1(part 0) is current device
+uboot > run loaddt_diags
+
+MMC read: dev # 1, block # 29192, count 256 ... 256 blocks read in 7 msec: OK
+uboot > run loadkernel_diags
+
+MMC read: dev # 1, block # 29392, count 28672 ... 28672 blocks read in 322 msec: OK
+uboot > iminfo 0x80800000
+
+## Checking Image at 80800000 ...
+   Legacy image found
+   Image Name:   Linux-7.3.1-dirty-normal
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    4227576 Bytes = 4 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+uboot > setenv bootargs console=ttymxc0,115200 earlycon=ec_imx6q,0x02020000
+uboot > mw.w 0x020bc000 0x773c
+uboot > 
+== WDOG1 armed: reset in 60s unless the kernel takes over
+mw.l 0x020e002c 0x00020000
+uboot > 
+== U-Boot: mw.l 0x020e002c 0x00020000
+bootm 0x80800000 - 0x83000000
+## Booting kernel from Legacy Image at 80800000 ...
+   Image Name:   Linux-7.3.1-dirty-normal
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    4227576 Bytes = 4 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 83000000
+   Booting using the fdt blob at 0x83000000
+   Loading Kernel Image ... OK
+   Loading Device Tree to 9fcb0000, end 9fcb8467 ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 7.3.1-dirty (admin-andrei@Gladiator) (arm-linux-gnueabihf-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #5 SMP Sun Nov  1 17:10:04 EET 2026
+[    0.000000] CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c5387d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: Amazon Kindle 8 (Heisenberg)
+[    0.000000] earlycon: ec_imx6q0 MMIO:0x02020000 (options '')
+[    0.000000] printk: legacy bootconsole [ec_imx6q0] enabled
+[    0.000000] Memory policy: Data cache writealloc
+[    0.000000] cma: Reserved 64 MiB at 0x9a000000
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000]   HighMem  empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000] percpu: Embedded 14 pages/cpu s26444 r8192 d22708 u57344
+[    0.000000] Kernel command line: console=ttymxc0,115200 earlycon=ec_imx6q,0x02020000 root=/dev/mmcblk0p4 rootwait rw g_ether.dev_addr=02:4b:38:00:00:02 g_ether.host_addr=02:4b:38:00:00:01
+[    0.000000] printk: log buffer data + meta data: 262144 + 819200 = 1081344 bytes
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes, linear)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 131072
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU event tracing is enabled.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=4 to nr_cpu_ids=1.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 10 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+[    0.000000] L2C-310 erratum 769419 enabled
+[    0.000000] L2C-310 ID prefetch enabled, offset 1 lines
+[    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
+[    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
+
+
+U-Boot 2014.04 (Aug 01 2023 - 12:36:45)
+
+CPU:   Freescale i.MX6SL rev1.4 at 792 MHz
+CPU:   Temperature 32 C, calibration data: 0x5744ff5f
+Reset cause: POR
+
+== board reset (watchdog?) during test boot; parking at U-Boot prompt
+FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+Board: Heisenberg
+Board Id: P0011XXXXXXXXXXX
+S/N: G000XXXXXXXXXXXX
+I2C:   ready
+DRAM:  MR5=0x6,MR6=0x3 512 MiB
+WARNING: Caches not enabled
+MMC:   FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+REBOOTMODE: 0
+using default bootcmdNormal Boot
+Hit any key to stop autoboot:  3  0 
+uboot >                
+uboot > 
+== parked at uboot > (next run: no --from-linux needed)
+
+!! TEST KERNEL FAILED (watchdog reset). Sending `reset` -> normal slot autoboots.
+
+==================== RUN FINISHED — leave the Kindle alone, Claude is reading the log ====================

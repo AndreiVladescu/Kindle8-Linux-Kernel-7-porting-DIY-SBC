@@ -1,0 +1,13 @@
+title: Linux 7.3 on a broken-screen Kindle 8
+remote_theme: pages-themes/slate@v0.2.0
+description: Turning a Kindle 8 (i.MX6SoloLite) with a dead e-ink panel into a headless Alpine Linux SBC on a mainline kernel.
+
+exclude:
+  - dumps/
+  - extracted/
+  - build/
+  - logs/
+  - kernel/
+  - tools/
+  - host/
+  - "*.img"

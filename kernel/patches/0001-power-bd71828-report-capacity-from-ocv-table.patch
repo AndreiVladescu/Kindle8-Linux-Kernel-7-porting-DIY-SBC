@@ -1,0 +1,85 @@
+diff --git a/drivers/power/supply/bd71828-power.c b/drivers/power/supply/bd71828-power.c
+index 3be7a75a7..f8013b893 100644
+--- a/drivers/power/supply/bd71828-power.c
++++ b/drivers/power/supply/bd71828-power.c
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <linux/math64.h>
+ #include <linux/mfd/rohm-bd71815.h>
+ #include <linux/mfd/rohm-bd71828.h>
+ #include <linux/mfd/rohm-bd72720.h>
+@@ -144,6 +145,7 @@ struct bd71828_power {
+ 	int rsens;
+ 	int (*get_temp)(struct bd71828_power *pwr, int *temp);
+ 	int (*bat_inserted)(struct bd71828_power *pwr);
++	struct power_supply_battery_info *batinfo;
+ };
+ 
+ static int bd7182x_write16(struct bd71828_power *pwr, int reg, u16 val)
+@@ -579,6 +581,32 @@ static int bd71828_battery_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_TEMP:
+ 		ret = pwr->get_temp(pwr, &val->intval);
+ 		break;
++	case POWER_SUPPLY_PROP_CAPACITY: {
++		/*
++		 * Voltage-based estimate from the DT "monitored-battery" OCV table.
++		 * Compensate the IR drop/rise of the charge/discharge current first.
++		 */
++		struct power_supply_battery_info *bi = pwr->batinfo;
++		int vbat, ocv, c, c_avg, temp_c = 20;
++
++		if (!bi || !bi->ocv_table_size[0])
++			return -ENODATA;
++		ret = bd71828_get_vbat(pwr, &vbat);
++		if (ret)
++			return ret;
++		ocv = vbat;
++		if (bi->factory_internal_resistance_uohm > 0 &&
++		    !bd71828_get_current_ds_adc(pwr, &c, &c_avg))
++			ocv -= (int)div_s64((s64)c_avg * bi->factory_internal_resistance_uohm,
++					    1000000);
++		/* bd71815_get_temp() yields whole degC, bd71828_get_temp() tenths */
++		if (!pwr->get_temp(pwr, &tmp))
++			temp_c = pwr->chip_type == ROHM_CHIP_TYPE_BD71815 ? tmp : tmp / 10;
++		val->intval = power_supply_batinfo_ocv2cap(bi, ocv, temp_c);
++		if (val->intval < 0)
++			return val->intval;
++		break;
++	}
+ 	case POWER_SUPPLY_PROP_CHARGE_BEHAVIOUR:
+ 		ret = regmap_read(pwr->regmap, pwr->regs->chg_en, &chg_en);
+ 		if (ret)
+@@ -650,6 +678,7 @@ static const enum power_supply_property bd71828_battery_props[] = {
+ 	POWER_SUPPLY_PROP_CURRENT_NOW,
+ 	POWER_SUPPLY_PROP_CURRENT_MAX,
+ 	POWER_SUPPLY_PROP_CHARGE_BEHAVIOUR,
++	POWER_SUPPLY_PROP_CAPACITY,
+ };
+ 
+ /** @brief powers supplied by bd71828_ac */
+@@ -1224,7 +1253,7 @@ static int bd71828_power_probe(struct platform_device *pdev)
+ 		return dev_err_probe(&pdev->dev, ret, "hardware init failed\n");
+ 
+ 	bat_cfg.drv_data	= pwr;
+-	bat_cfg.fwnode		= dev_fwnode(&pdev->dev);
++	bat_cfg.fwnode		= dev_fwnode(&pdev->dev) ?: dev_fwnode(pdev->dev.parent);
+ 
+ 	ac_cfg.supplied_to	= bd71828_ac_supplied_to;
+ 	ac_cfg.num_supplicants	= ARRAY_SIZE(bd71828_ac_supplied_to);
+@@ -1242,6 +1271,14 @@ static int bd71828_power_probe(struct platform_device *pdev)
+ 		return dev_err_probe(&pdev->dev, PTR_ERR(pwr->bat),
+ 				     "failed to register bat\n");
+ 
++	/* Optional: "monitored-battery" (simple-battery) -> CAPACITY from the OCV table */
++	if (power_supply_get_battery_info(pwr->bat, &pwr->batinfo))
++		pwr->batinfo = NULL;
++	else
++		dev_info(&pdev->dev, "battery info: %d OCV points, Ri %d uOhm\n",
++			 pwr->batinfo->ocv_table_size[0],
++			 pwr->batinfo->factory_internal_resistance_uohm);
++
+ 	ret = bd7182x_get_irqs(pdev, pwr);
+ 	if (ret)
+ 		return dev_err_probe(&pdev->dev, ret, "failed to request IRQs");

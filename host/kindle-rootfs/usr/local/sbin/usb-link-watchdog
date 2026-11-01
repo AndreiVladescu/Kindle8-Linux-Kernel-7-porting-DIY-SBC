@@ -1,0 +1,26 @@
+#!/bin/sh
+# Recover the USB gadget Ethernet link when the PC side goes deaf (e.g. after a PC reboot the gadget stays
+# "configured" but the host never ARPs back). ARP-probe the PC; after 3 misses while a host is attached,
+# soft-disconnect/reconnect the UDC so the PC re-enumerates and NetworkManager re-activates "kindle8-usb".
+# Exponential backoff (60 s .. 30 min) so a PC that is simply off/asleep isn't hammered.
+UDC=/sys/class/udc/ci_hdrc.0
+PEER=192.168.7.1
+IF=usb0
+fail=0; backoff=60
+log() { logger -t usb-link-watchdog "$*"; }
+while sleep 20; do
+	state=$(cat $UDC/state 2>/dev/null)
+	case "$state" in
+		""|"not attached") fail=0; backoff=60; continue ;;   # no cable / no host: nothing to fix
+	esac
+	if arping -q -c 1 -w 2 -I $IF $PEER; then
+		[ $backoff -ne 60 ] && log "link back"
+		fail=0; backoff=60; continue
+	fi
+	fail=$((fail + 1))
+	[ $fail -lt 3 ] && continue
+	log "PC $PEER unreachable on $IF (udc state: $state) -> soft reconnect, next try in ${backoff}s"
+	echo disconnect > $UDC/soft_connect; sleep 2; echo connect > $UDC/soft_connect
+	fail=0; sleep $backoff
+	backoff=$((backoff * 2)); [ $backoff -gt 1800 ] && backoff=1800
+done

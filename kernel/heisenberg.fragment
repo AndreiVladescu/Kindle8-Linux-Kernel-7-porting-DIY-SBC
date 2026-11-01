@@ -1,0 +1,94 @@
+# --- Kindle 8 (heisenberg) headless config fragment, merged on top of imx_v6_v7_defconfig ---
+# Only i.MX6SL
+# CONFIG_SOC_IMX31 is not set
+# CONFIG_SOC_IMX35 is not set
+# CONFIG_SOC_IMX50 is not set
+# CONFIG_SOC_IMX51 is not set
+# CONFIG_SOC_IMX53 is not set
+# CONFIG_SOC_IMX6Q is not set
+# CONFIG_SOC_IMX6SLL is not set
+# CONFIG_SOC_IMX6SX is not set
+# CONFIG_SOC_IMX6UL is not set
+# CONFIG_SOC_IMX7D is not set
+# CONFIG_SOC_IMX7ULP is not set
+# CONFIG_ARCH_VF610 is not set
+CONFIG_SOC_IMX6SL=y
+
+# Small image for serial upload
+CONFIG_KERNEL_XZ=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+# CONFIG_DRM is not set
+# CONFIG_FB is not set
+# CONFIG_SOUND is not set
+# CONFIG_SND is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_CAN is not set
+# CONFIG_MTD is not set
+# CONFIG_PCI is not set
+# CONFIG_ATA is not set
+# CONFIG_IIO is not set
+# CONFIG_NFS_FS is not set
+# CONFIG_USB_HOST is not set (keep gadget side only, later)
+# CONFIG_NET_VENDOR_FREESCALE is not set
+# CONFIG_LOGO is not set
+
+# First boot safety: do not touch voltages/frequencies U-Boot set
+# CONFIG_CPU_FREQ is not set
+# CONFIG_ARM_IMX6Q_CPUFREQ is not set
+# CONFIG_CPU_IDLE is not set
+
+# Early debug on UART1 (ttymxc0)
+CONFIG_DEBUG_LL=y
+CONFIG_DEBUG_IMX6SL_UART=y
+CONFIG_DEBUG_IMX_UART_PORT=1
+CONFIG_DEBUG_UNCOMPRESS=y
+CONFIG_EARLY_PRINTK=y
+
+# Stock rootfs is ext3 on mmcblk0p1
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT2=y
+CONFIG_VFAT_FS=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_MMC_SDHCI_ESDHC_IMX=y
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+
+# L2 (PL310) back on for the L2 experiments (boot 003 proved it was the culprit when disabled)
+CONFIG_CACHE_L2X0=y
+
+# Boot 004: USB gadget Ethernet (CDC-ECM) built in -> usb0 at boot, no modules needed
+CONFIG_USB_ETH=y
+# CONFIG_USB_ETH_RNDIS is not set
+# CONFIG_USB_ETH_EEM is not set
+
+# L2 experiment F: stock 3.10 is a UP build ("#8 PREEMPT", no SMP). i.MX6SL is single-core and never
+# enables the SCU, but an SMP kernel sets ACTLR.SMP + shareable page tables. Go UP like stock.
+# CONFIG_SMP is not set
+
+# PMIC stage 1: BD71815 charger / fuel gauge (MFD, regulator, RTC, GPIO, clk already in imx_v6_v7_defconfig)
+CONFIG_CHARGER_BD71828=y
+
+# WiFi: BCM43430 on uSDHC1 via brcmfmac (module: firmware lives on the Alpine rootfs)
+CONFIG_WLAN=y
+CONFIG_WLAN_VENDOR_BROADCOM=y
+CONFIG_CFG80211=y
+CONFIG_MAC80211=y
+CONFIG_BRCMUTIL=m
+CONFIG_BRCMFMAC=m
+CONFIG_BRCMFMAC_SDIO=y
+CONFIG_MMC_PWRSEQ_SIMPLE=y
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+
+# Bluetooth: BCM43430A1 on UART3 via serdev hci_bcm (modules; firmware brcm/BCM43430A1.hcd on rootfs)
+CONFIG_BT=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_SERDEV=y
+CONFIG_BT_HCIUART_BCM=y
+CONFIG_SERIAL_DEV_BUS=y
+CONFIG_SERIAL_DEV_CTRL_TTYPORT=y
+# Firmware loader: read Alpine's .zst firmware directly (WiFi + BT)
+CONFIG_FW_LOADER_COMPRESS=y
+CONFIG_FW_LOADER_COMPRESS_ZSTD=y

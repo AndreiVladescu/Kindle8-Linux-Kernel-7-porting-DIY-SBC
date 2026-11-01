@@ -1,0 +1,15 @@
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 470867160..281cf6383 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -611,6 +611,10 @@ static void __init l2c310_enable(void __iomem *base, unsigned num_lock)
+ 	bool cortex_a9 = read_cpuid_part() == ARM_CPU_PART_CORTEX_A9;
+ 	u32 aux = l2x0_saved_regs.aux_ctrl;
+ 
++	/* heisenberg debug: CPU-side cache config vs PL310 */
++	pr_info("heisenberg-l2: ACTLR=0x%08x MPIDR=0x%08x SCTLR=0x%08x AUX(hw)=0x%08x AUX(new)=0x%08x\n",
++		get_auxcr(), read_cpuid_mpidr(), get_cr(), readl_relaxed(base + L2X0_AUX_CTRL), aux);
++
+ 	if (rev >= L310_CACHE_ID_RTL_R2P0) {
+ 		if (cortex_a9 && !l2x0_bresp_disable) {
+ 			aux |= L310_AUX_CTRL_EARLY_BRESP;

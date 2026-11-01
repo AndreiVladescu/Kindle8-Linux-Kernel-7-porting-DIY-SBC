@@ -1,0 +1,4 @@
+# Normal boot: stock U-Boot passes "console=ttymxc0,115200 root=/dev/mmcblk0p1 rootwait rw uart_at_4M".
+# EXTEND appends this; for root= the last value wins -> Alpine on p4. No U-Boot env changes needed.
+CONFIG_CMDLINE="root=/dev/mmcblk0p4 rootwait rw g_ether.dev_addr=02:4b:38:00:00:02 g_ether.host_addr=02:4b:38:00:00:01"
+CONFIG_CMDLINE_EXTEND=y

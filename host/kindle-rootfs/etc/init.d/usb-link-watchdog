@@ -1,0 +1,5 @@
+#!/sbin/openrc-run
+description="Re-enumerate the USB gadget link when the PC stops answering"
+command=/usr/local/sbin/usb-link-watchdog
+supervisor=supervise-daemon
+depend() { need networking; after syslog; }

@@ -1,0 +1,305 @@
+
+#################### stage.py run 17:40:11 -> logs/test-174011.log ####################
+
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: rebooting the Kindle over SSH
+----------------------------------------------------------------------
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>> ACTION: reset the Kindle now (USB unplugged, hold power until it restarts, release, replug). Waiting up to 600s
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+                      
+Welcome to Alpine Linux 3.24
+Kernel 7.3.1-dirty on armv7l (/dev/ttymxc0)
+
+kindle8 login:   * Stopping dropbear ...  [ ok ]
+     * Stopping busybox syslog ... [ ok ]
+     * Stopping chronyd ...  [ ok ]
+                   * Unmounting loop devices
+ * Unmounting filesystems
+  *   Unmounting /tmp ... [ ok ]
+             * Setting hardware clock using the system clock [UTC] ...  [ ok ]
+       * Stopping busybox mdev ... /usr/libexec/rc/sh/openrc-run.sh: line 38: can't create /proc/sys/kernel/hotplug: nonexistent directory
+ [ ok ]
+              * Terminating remaining processes ...  [ ok ]
+ * Killing remaining processes ...  [ ok ]
+    * Saving dependency cache ... [ ok ]
+    * Remounting remaining filesystems read-only ...  *   Remounting / read only ...  [ ok ]
+ [ ok ]
+ The system is going down NOW!
+Sent SIGTERM to all processes
+                    Sent SIGKILL to all processes
+Requesting system reboot
+                    [  265.577976] reboot: Restarting system
+
+
+U-Boot 2014.04 (Aug 01 2023 - 12:36:45)
+
+CPU:   Freescale i.MX6SL rev1.4 at 792 MHz
+CPU:   Temperature 34 C, calibration data: 0x5744ff5f
+Reset cause: WDOG
+FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+Board: Heisenberg
+Board Id: P0011XXXXXXXXXXX
+S/N: G000XXXXXXXXXXXX
+I2C:   ready
+DRAM:  MR5=0x6,MR6=0x3 512 MiB
+WARNING: Caches not enabled
+MMC:   FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+REBOOTMODE: 0
+using default bootcmdNormal Boot
+Hit any key to stop autoboot:  3  0 
+uboot >                
+uboot > 
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: U-Boot caught — script is driving the Kindle now
+----------------------------------------------------------------------
+run setmmcdev
+mmc1(part 0) is current device
+uboot > run loaddt_diags
+
+MMC read: dev # 1, block # 29192, count 256 ... 256 blocks read in 8 msec: OK
+uboot > run loadkernel_diags
+
+MMC read: dev # 1, block # 29392, count 28672 ... 28672 blocks read in 321 msec: OK
+uboot > iminfo 0x80800000
+
+## Checking Image at 80800000 ...
+   Legacy image found
+   Image Name:   Linux-7.3.1-dirty-normal
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    4077992 Bytes = 3.9 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+uboot > setenv bootargs console=ttymxc0,115200 earlycon=ec_imx6q,0x02020000
+uboot > mw.w 0x020bc000 0x773c
+uboot > 
+== WDOG1 armed: reset in 60s unless the kernel takes over
+mw.l 0x020e002c 0x00020000
+uboot > 
+== U-Boot: mw.l 0x020e002c 0x00020000
+bootm 0x80800000 - 0x83000000
+## Booting kernel from Legacy Image at 80800000 ...
+   Image Name:   Linux-7.3.1-dirty-normal
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    4077992 Bytes = 3.9 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 83000000
+   Booting using the fdt blob at 0x83000000
+   Loading Kernel Image ... OK
+   Loading Device Tree to 9fcb0000, end 9fcb8467 ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 7.3.1-dirty (admin-andrei@Gladiator) (arm-linux-gnueabihf-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #7 Sun Nov  1 17:39:58 EET 2026
+[    0.000000] CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c5387d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: Amazon Kindle 8 (Heisenberg)
+[    0.000000] earlycon: ec_imx6q0 MMIO:0x02020000 (options '')
+[    0.000000] printk: legacy bootconsole [ec_imx6q0] enabled
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] cma: Reserved 64 MiB at 0x9a000000
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] CPU: All CPU(s) started in SVC mode.
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000]   HighMem  empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x000000009fffffff]
+[    0.000000] Kernel command line: console=ttymxc0,115200 earlycon=ec_imx6q,0x02020000 root=/dev/mmcblk0p4 rootwait rw g_ether.dev_addr=02:4b:38:00:00:02 g_ether.host_addr=02:4b:38:00:00:01
+[    0.000000] printk: log buffer data + meta data: 262144 + 819200 = 1081344 bytes
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes, linear)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 131072
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
+[    0.000000] L2C-310 erratum 769419 enabled
+[    0.000000] heisenberg-l2: ACTLR=0x00000000 MPIDR=0x80000000 SCTLR=0x10c5387d AUX(hw)=0x32030000 AUX(new)=0x32030000
+[    0.000000] L2C-310 ID prefetch enabled, offset 1 lines
+[    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
+[    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
+[    0.000000] L2C-310: CACHE_ID 0x410000c8, AUX_CTRL 0x36030000
+[    0.000000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+[    0.000000] Switching to timer-based delay loop, resolution 41ns
+[    0.000002] sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 89478484971ns
+[    0.007828] clocksource: mxc_timer1: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 79635851949 ns
+[    0.018633] Console: colour dummy device 80x30
+[    0.021861] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=240000)
+[    0.032235] CPU: Testing write buffer coherency: ok
+[    0.037057] CPU0: Spectre v2: using BPIALL workaround
+[    0.042100] pid_max: default: 32768 minimum: 301
+[    0.047035] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.054032] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.062411] VFS: Finished mounting rootfs on nullfs
+[    0.069884] Setting up static identity map for 0x80100000 - 0x80100078
+[    0.074763] Memory: 439432K/524288K available (8192K kernel code, 1185K rwdata, 2672K rodata, 1024K init, 343K bss, 18584K reserved, 65536K cma-reserved, 0K highmem)
+[    0.089664] devtmpfs: initialized
+[    0.098870] VFP support v0.3: implementor 41 architecture 3 part 30 variant 9 rev 4
+[    0.104162] posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
+[    0.111097] futex hash table entries: 256 (3072 bytes on 1 NUMA nodes, total 3 KiB, linear).
+[    0.125812] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.133245] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.139041] thermal_sys: Registered thermal governor 'step_wise'
+[    0.143942] /soc/bus@2000000/gpc@20dc000: Fixed dependency cycle(s) with /soc/bus@2000000/clock-controller@20c4000
+[    0.157577] /soc/bus@2000000/clock-controller@20c4000: Fixed dependency cycle(s) with /soc/bus@2000000/gpc@20dc000
+[    0.188366] hw-breakpoint: found 5 (+1 reserved) breakpoint and 1 watchpoint registers.
+[    0.193563] hw-breakpoint: maximum watchpoint size is 4 bytes.
+[    0.200490] imx6sl-pinctrl 20e0000.pinctrl: initialized IMX pinctrl driver
+[    0.209212] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.220545] gpio gpiochip0: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.230810] gpio gpiochip1: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.240764] gpio gpiochip2: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.250705] gpio gpiochip3: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.260785] gpio gpiochip4: Static allocation of GPIO base is deprecated, use dynamic allocation.
+[    0.271356] SCSI subsystem initialized
+[    0.272841] usbcore: registered new interface driver usbfs
+[    0.278016] usbcore: registered new interface driver hub
+[    0.283153] usbcore: registered new device driver usb
+[    0.288419] usb_phy_generic usbphynop1: dummy supplies not allowed for exclusive requests (id=vbus)
+[    0.299235] pps_core: LinuxPPS API ver. 1 registered
+[    0.302116] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.311363] PTP clock support registered
+[    0.318875] clocksource: Switched to clocksource mxc_timer1
+[    0.322403] VFS: Disk quotas dquot_6.6.0
+[    0.325646] VFS: Dquot-cache hash table entries: 1024 (4096 bytes)
+[    0.360567] NET: Registered PF_INET protocol family
+[    0.362992] IP idents hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.371319] tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.378302] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.386182] TCP established hash table entries: 4096 (order: 2, 16384 bytes, linear)
+[    0.393865] TCP bind hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.401010] TCP: Hash tables configured (established 4096 bind 4096)
+[    0.407401] UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+[    0.414117] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.425081] Initialise system trusted keyrings
+[    0.427382] workingset: timestamp_bits=30 (anon: 25) max_order=17 bucket_order=0 (anon: 0)
+[    0.436214] fuse: init (API version 7.46)
+[    0.439819] Key type asymmetric registered
+[    0.443059] Asymmetric key parser 'x509' registered
+[    0.448050] io scheduler mq-deadline registered
+[    0.452534] io scheduler kyber registered
+[    0.456548] io scheduler bfq registered
+[    0.480842] 2020000.serial: ttymxc0 MMIO:0x02020000 (irq = 187, base_baud = 5000000) is a IMX
+[    0.486642] printk: console [ttymxc0] enabled
+[    0.486642] printk: console [ttymxc0] enabled
+[    0.495342] printk: legacy bootconsole [ec_imx6q0] disabled
+[    0.495342] printk: legacy bootconsole [ec_imx6q0] disabled
+[    0.543745] imx_rngc 21b4000.rngb: Freescale RNGB registered (HW revision 2.129)
+[    0.544270] random: crng init done
+[    0.574427] brd: module loaded
+[    0.588112] loop: module loaded
+[    0.597383] usbcore: registered new device driver r8152-cfgselector
+[    0.597518] usbcore: registered new interface driver r8152
+[    0.597646] usbcore: registered new interface driver lan78xx
+[    0.597816] usbcore: registered new interface driver asix
+[    0.597957] usbcore: registered new interface driver ax88179_178a
+[    0.598087] usbcore: registered new interface driver cdc_ether
+[    0.598216] usbcore: registered new interface driver smsc95xx
+[    0.598338] usbcore: registered new interface driver net1080
+[    0.598464] usbcore: registered new interface driver cdc_subset
+[    0.598589] usbcore: registered new interface driver zaurus
+[    0.598712] usbcore: registered new interface driver MOSCHIP usb-ethernet driver
+[    0.598841] usbcore: registered new interface driver cdc_ncm
+[    0.670377] usbcore: registered new interface driver r8153_ecm
+[    0.670525] usbcore: registered new interface driver usb-storage
+[    0.671048] usbcore: registered new device driver onboard-usb-dev
+[    0.677039] UDC core: g_ether: couldn't find an available UDC
+[    0.705927] snvs_rtc 20cc000.snvs:snvs-rtc-lp: registered as rtc0
+[    0.705992] snvs_rtc 20cc000.snvs:snvs-rtc-lp: setting system clock to 2026-11-01T15:40:26 UTC (1793547626)
+[    0.706316] i2c_dev: i2c /dev entries driver
+[    0.736522] mmc0 bounce up to 128 segments into one, max segment size 65536 bytes
+[    0.750450] usbcore: registered new interface driver usbhid
+[    0.750473] usbhid: USB HID core driver
+[    0.751808] hw perfevents: enabled with armv7_cortex_a9 PMU driver, 7 (8000003f) counters available
+[    0.756016] NET: Registered PF_INET6 protocol family
+[    0.758063] Segment Routing with IPv6
+[    0.758156] In-situ OAM (IOAM) with IPv6
+[    0.758342] NET: Registered PF_PACKET protocol family
+[    0.758399] Key type dns_resolver registered
+[    0.758623] Registering SWP/SWPB emulation handler
+[    0.790415] mmc0: SDHCI controller on 2194000.mmc [2194000.mmc] using DMA
+[    0.825181] Loading compiled-in X.509 certificates
+[    0.858525] using host ethernet address: 02:4b:38:00:00:01
+[    0.858544] using self ethernet address: 02:4b:38:00:00:02
+[    0.865248] g_ether gadget.0: HOST MAC 02:4b:38:00:00:01
+[    0.865280] g_ether gadget.0: MAC 02:4b:38:00:00:02
+[    0.865472] g_ether gadget.0: Ethernet Gadget, version: Memorial Day 2008
+[    0.865495] g_ether gadget.0: g_ether ready
+[    0.865707] mxs_phy 20c9000.usbphy: vbus is not valid
+[    0.867654] imx_thermal 20c8000.anatop:tempmon: Commercial CPU temperature grade - max:95C critical:90C passive:85C
+[    0.912962] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    0.917003] Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    0.933472] Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    0.933540] clk: Disabling unused clocks
+[    0.933743] faux_driver regulatory: Direct firmware load for regulatory.db failed with error -2
+[    0.933777] cfg80211: failed to load regulatory.db
+[    0.934086] PM: genpd: Disabling unused power domains
+[    0.934706] Waiting for root device /dev/mmcblk0p4...
+[    0.994887] mmc0: new high speed DDR MMC card at address 0001
+[    0.995907] mmcblk0: mmc0:0001 H4G2a 3.64 GiB
+[    1.012946]  mmcblk0: p1 p2 p3 p4
+[    1.015101] mmcblk0boot0: mmc0:0001 H4G2a 4.00 MiB
+[    1.033707] mmcblk0boot1: mmc0:0001 H4G2a 4.00 MiB
+[    1.050482] mmcblk0rpmb: mmc0:0001 H4G2a 4.00 MiB, chardev (244:0)
+[    1.267622] EXT4-fs (mmcblk0p4): mounted filesystem 3a2ba20b-6204-4c17-ac77-d6f03d55d308 r/w with ordered data mode. Quota mode: none.
+[    1.267734] VFS: Mounted root (ext4 filesystem) on device 179:4.
+[    1.268794] devtmpfs: mounted
+[    1.290280] VFS: Pivoted into new rootfs
+[    1.293023] Freeing unused kernel image (initmem) memory: 1024K
+[    1.293223] Run /sbin/init as init process
+
+   OpenRC 0.63.2 is starting up Linux 7.3.1-dirty (armv7l)
+
+ * Mounting /proc ... [ ok ]
+ * Mounting /run ... [ ok ]
+ * /run/openrc: creating directory
+ * /run/lock: creating directory
+ * /run/lock: correcting owner
+ * Remounting devtmpfs on /dev ... [ ok ]
+ * Mounting /dev/pts ... [ ok ]
+ * Mounting /dev/shm ... [ ok ]
+ * Mounting /sys ... [ ok ]
+ * Mounting debug filesystem ... [ ok ]
+ * Mounting config filesystem ... [ ok ]
+ * Mounting fuse control filesystem ... [ ok ]
+ * Mounting bpf filesystem ... [ ok ]
+ * Starting busybox mdev .../usr/libexec/rc/sh/openrc-run.sh: line 15: can't create /proc/sys/kernel/hotplug: nonexistent directory
+ [ !! ]
+ * Scanning hardware for mdev ... [ ok ]
+ * Checking local filesystems  ... [ ok ]
+ * Remounting filesystems ... [ ok ]
+ * Mounting local filesystems ... [ ok ]
+ * Configuring kernel parameters ...sysctl: error: 'net.ipv4.tcp_syncookies' is an unknown key
+ [ ok ]
+ * Creating user login records ... [ ok ]
+ * Setting hostname to kindle8 from /etc/hostname ... [ ok ]
+ * Starting networking ... *   lo ... [ ok ]
+ *   usb0 ... [ ok ]
+ * Loading modules ...modprobe: can't change directory to '7.3.1-dirty': No such file or directory
+modprobe: can't change directory to '7.3.1-dirty': No such file or directory
+ [ ok ]
+ * Setting system clock using the hardware clock [UTC] ... [ ok ]
+ * Starting busybox syslog ... [ ok ]
+ * Starting chronyd ... [ ok ]
+ * Starting dropbear ... [ ok ]
+
+Welcome to Alpine Linux 3.24
+Kernel 7.3.1-dirty on armv7l (/dev/ttymxc0)
+
+kindle8 login: 
+== watch ended, log in logs/test-174011.log
+
+==================== RUN FINISHED — leave the Kindle alone, Claude is reading the log ====================

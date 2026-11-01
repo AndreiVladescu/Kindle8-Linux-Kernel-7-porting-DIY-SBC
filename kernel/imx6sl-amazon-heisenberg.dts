@@ -1,0 +1,275 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Amazon Kindle 8th gen (KT3, 2016), board "Heisenberg", platform "eanab".
+ * Headless bring-up DTS for mainline Linux. Display (EPDC/FP9928) intentionally omitted.
+ *
+ * Derived from the stock 3.10.53-lab126 DTB (extracted/boot/stock.dts):
+ *   UART1 0x02020000  console (ttymxc0)
+ *   uSDHC2 0x02194000 eMMC, 8-bit  (stock alias mmc0 -> keep as mmcblk0)
+ *   uSDHC1 0x02190000 BCM43430/4343W WiFi SDIO, 4-bit
+ *   UART3 0x02034000  4343W Bluetooth HCI (RX/TX/RTS/CTS)
+ *   I2C1  @0x4b ROHM BD71815 PMIC (IRQ gpio4 20), @0x48 FP9928 EPD PMIC
+ *   I2C2  @0x50 zForce2 IR touch
+ * Stock gpio phandles are 0-based; mainline labels are 1-based (stock gpio1 == &gpio2).
+ *
+ * Pad values keep bit 22 (LVE, 1.8 V low-voltage enable) exactly as the vendor DT set it.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "imx6sl.dtsi"
+
+/ {
+	model = "Amazon Kindle 8 (Heisenberg)";
+	compatible = "amazon,heisenberg", "fsl,imx6sl";
+
+	aliases {
+		mmc0 = &usdhc2;	/* eMMC  -> mmcblk0, same as stock */
+		mmc1 = &usdhc1;	/* WiFi */
+		serial0 = &uart1;
+	};
+
+	chosen {
+		stdout-path = &uart1;
+	};
+
+	/*
+	 * Kindle 8 Li-ion cell. OCV table is a generic LiCoO2/graphite curve (not measured on this cell),
+	 * used by the patched bd71828-power driver for a voltage-based CAPACITY estimate.
+	 */
+	battery: battery {
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion";
+		voltage-min-design-microvolt = <3400000>;
+		voltage-max-design-microvolt = <4200000>;
+		factory-internal-resistance-micro-ohms = <150000>;
+		ocv-capacity-celsius = <20>;
+		ocv-capacity-table-0 = <4185000 100>, <4113000 95>, <4066000 90>, <4022000 85>,
+				       <3983000 80>, <3949000 75>, <3917000 70>, <3889000 65>,
+				       <3864000 60>, <3835000 55>, <3815000 50>, <3801000 45>,
+				       <3792000 40>, <3785000 35>, <3778000 30>, <3772000 25>,
+				       <3764000 20>, <3753000 15>, <3741000 10>, <3712000 5>,
+				       <3600000 0>;
+	};
+
+	/* BCM43430/4343W WiFi: WL_REG_ON is the module's power/reset; 32k sleep clock from the PMIC */
+	wifi_pwrseq: wifi-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wifi>;
+		reset-gpios = <&gpio2 15 GPIO_ACTIVE_LOW>;	/* WL_REG_ON */
+		clocks = <&pmic>;
+		clock-names = "ext_clock";
+		post-power-on-delay-ms = <80>;
+		power-off-delay-us = <300>;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x20000000>;
+	};
+};
+
+&iomuxc {
+	pinctrl_uart1: uart1grp {
+		fsl,pins = <
+			MX6SL_PAD_UART1_RXD__UART1_RX_DATA          0x41b0b1	/* stock: 0x298 0x5a0 0x7fc 0x00 0x00 */
+			MX6SL_PAD_UART1_TXD__UART1_TX_DATA          0x41b0b1	/* stock: 0x29c 0x5a4 0x000 0x00 0x00 */
+		>;
+	};
+
+	pinctrl_usdhc2: usdhc2grp {
+		fsl,pins = <
+			MX6SL_PAD_SD2_CMD__SD2_CMD                  0x407059	/* stock: 0x258 0x560 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_CLK__SD2_CLK                  0x400059	/* stock: 0x254 0x55c 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT0__SD2_DATA0               0x407059	/* stock: 0x25c 0x564 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT1__SD2_DATA1               0x407059	/* stock: 0x260 0x568 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT2__SD2_DATA2               0x407059	/* stock: 0x264 0x56c 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT3__SD2_DATA3               0x407059	/* stock: 0x268 0x570 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT4__SD2_DATA4               0x407059	/* stock: 0x26c 0x574 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT5__SD2_DATA5               0x407059	/* stock: 0x270 0x578 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT6__SD2_DATA6               0x407059	/* stock: 0x274 0x57c 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_DAT7__SD2_DATA7               0x407059	/* stock: 0x278 0x580 0x000 0x00 0x00 */
+			MX6SL_PAD_SD2_RST__SD2_RESET                0x407059	/* stock: 0x27c 0x584 0x000 0x00 0x00 */
+		>;
+	};
+
+	pinctrl_i2c1: i2c1grp {
+		fsl,pins = <
+			MX6SL_PAD_I2C1_SCL__I2C1_SCL                0x404108b1	/* stock: 0x15c 0x44c 0x71c 0x00 0x02 */
+			MX6SL_PAD_I2C1_SDA__I2C1_SDA                0x404108b1	/* stock: 0x160 0x450 0x720 0x00 0x02 */
+		>;
+	};
+
+	pinctrl_uart3: uart3grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_VCOM0__UART3_RX_DATA         0x41b0b1	/* stock uart3grp */
+			MX6SL_PAD_EPDC_VCOM1__UART3_TX_DATA         0x4130b1
+			MX6SL_PAD_EPDC_BDR0__UART3_RTS_B            0x41b0b1
+			MX6SL_PAD_EPDC_BDR1__UART3_CTS_B            0x41b0b1
+		>;
+	};
+
+	pinctrl_bt: btgrp {
+		fsl,pins = <
+			MX6SL_PAD_LCD_RESET__GPIO2_IO19             0x4000b0	/* BT_REG_ON, stock hoggrp */
+			MX6SL_PAD_SD1_DAT7__GPIO5_IO10              0x4100b0	/* BT_DEV_WAKE, stock hoggrp */
+			MX6SL_PAD_KEY_ROW2__GPIO3_IO29              0x4130b0	/* BT_HOST_WAKE, stock hoggrp */
+		>;
+	};
+
+	pinctrl_wifi: wifigrp {
+		fsl,pins = <
+			MX6SL_PAD_LCD_CLK__GPIO2_IO15               0x4170b0	/* WL_REG_ON, stock hoggrp */
+			MX6SL_PAD_KEY_ROW3__GPIO3_IO31              0x4130b0	/* WL_HOST_WAKE, stock hoggrp */
+		>;
+	};
+
+	pinctrl_pmic: pmicgrp {
+		fsl,pins = <
+			MX6SL_PAD_FEC_MDIO__GPIO4_IO20              0x4100b0	/* BD71815 INTB, stock hoggrp value */
+		>;
+	};
+
+	pinctrl_usdhc1: usdhc1grp {
+		fsl,pins = <
+			MX6SL_PAD_SD1_CMD__SD1_CMD                  0x407059	/* stock: 0x230 0x538 0x000 0x00 0x00 */
+			MX6SL_PAD_SD1_CLK__SD1_CLK                  0x4000d9	/* stock: 0x22c 0x534 0x000 0x00 0x00 */
+			MX6SL_PAD_SD1_DAT0__SD1_DATA0               0x407059	/* stock: 0x234 0x53c 0x000 0x00 0x00 */
+			MX6SL_PAD_SD1_DAT1__SD1_DATA1               0x407059	/* stock: 0x238 0x540 0x000 0x00 0x00 */
+			MX6SL_PAD_SD1_DAT2__SD1_DATA2               0x407059	/* stock: 0x23c 0x544 0x000 0x00 0x00 */
+			MX6SL_PAD_SD1_DAT3__SD1_DATA3               0x407059	/* stock: 0x240 0x548 0x000 0x00 0x00 */
+		>;
+	};
+
+	pinctrl_usbotg1: usbotg1grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_PWRCOM__USB_OTG1_ID          0x17059	/* stock: 0x0e0 0x3d0 0x5dc 0x04 0x00 */
+		>;
+	};
+};
+
+/*
+ * Boot 001 hung right after L2C-310 enable. Stock 3.10 ran the PL310 with AUX_CTRL 0x32030000
+ * (no early BRESP, no full-line-of-zeros); mainline turns both on for Cortex-A9. Match stock.
+ */
+&L2 {
+	/*
+	 * Match the stock 3.10 PL310 setup measured on-device (logs/regs-stock-vs-mainline.txt):
+	 * AUX 0x32030000 (no early BRESP, no FLZ, no shared-override), latencies 0x132, POWER 0x3.
+	 * Experiments A (power modes off) and B (shared-override) did not help.
+	 */
+	arm,early-bresp-disable;
+	arm,full-line-zero-disable;
+	/* PREFETCH_CTRL = 0x70800000 exactly as stock: dbl linefill + INCR, I+D prefetch, offset 0 */
+	arm,double-linefill = <1>;
+	arm,double-linefill-incr = <1>;
+	arm,double-linefill-wrap = <0>;
+	arm,prefetch-drop = <0>;
+	arm,prefetch-offset = <0>;
+	prefetch-data = <1>;
+	prefetch-instr = <1>;
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1>;
+	status = "okay";
+};
+
+/* BCM43430A1 Bluetooth (same 4343W module as WiFi) on UART3 with HW flow control */
+&uart3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart3>;
+	uart-has-rtscts;
+	status = "okay";
+
+	bluetooth {
+		compatible = "brcm,bcm43430a1-bt";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_bt>;
+		shutdown-gpios = <&gpio2 19 GPIO_ACTIVE_HIGH>;		/* BT_REG_ON */
+		device-wakeup-gpios = <&gpio5 10 GPIO_ACTIVE_HIGH>;	/* BT_DEV_WAKE */
+		/* host-wakeup (gpio3 29) left out until its polarity is known */
+		clocks = <&pmic>;
+		clock-names = "lpo";
+		max-speed = <3000000>;
+	};
+};
+
+/* eMMC: Hynix H4G2a 3.64 GiB. Stock forced no UHS/1.8V switching; keep it simple at first. */
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2>;
+	bus-width = <8>;
+	non-removable;
+	no-1-8-v;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
+/* --- Stage 2 (disabled for first boot) ------------------------------------ */
+
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1>;
+	clock-frequency = <375000>;	/* 0x5b8d8 in stock DT */
+	status = "okay";
+
+	/*
+	 * ROHM BD71815 PMIC. Stage 1: core, RTC, GPO, 32k clock, charger/fuel gauge.
+	 * The regulators node is intentionally EMPTY: without constraints the regulator core
+	 * registers the outputs read-only and never changes or disables them (DDR/ARM/SOC supplies!).
+	 */
+	pmic: pmic@4b {
+		compatible = "rohm,bd71815";
+		reg = <0x4b>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_pmic>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
+		system-power-controller;
+		monitored-battery = <&battery>;
+		clocks = <&clks 0>;		/* dummy, like imx6sll-kobo-clara2e */
+		#clock-cells = <0>;
+		clock-output-names = "bd71815-32k-out";
+		gpio-controller;
+		#gpio-cells = <2>;
+
+		regulators {
+		};
+	};
+
+	/* fp9928@48: e-ink panel PMIC — screen is broken, not described */
+};
+
+&usdhc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc1>;
+	bus-width = <4>;
+	non-removable;
+	keep-power-in-suspend;
+	no-1-8-v;			/* pads already run at 1.8 V (LVE); no UHS switching */
+	max-frequency = <50000000>;
+	mmc-pwrseq = <&wifi_pwrseq>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	wifi: wifi@1 {
+		compatible = "brcm,bcm4329-fmac";
+		reg = <1>;
+		/* OOB host-wake (gpio3 31) can be added later; in-band SDIO IRQ first */
+	};
+};
+
+/* Micro-USB port: device mode only (g_ether built in -> usb0, CDC-ECM). VBUS comes from the PC. */
+&usbotg1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg1>;
+	disable-over-current;
+	dr_mode = "peripheral";
+	status = "okay";
+};

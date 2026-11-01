@@ -1,0 +1,368 @@
+
+#################### stage.py run 17:22:48 -> logs/stock-kinit.log ####################
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+>>> ACTION: reset the Kindle now (USB unplugged, hold power until it restarts, release, replug). Waiting up to 240s
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+^C
+ #                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      [  473.293603] watchdog pre-timeout:0, 60 Seconds remained
+[  473.299014] 
+Wdog pre-tout ISR: jiffies(last wdog ping): 11529 jiffies(Now): 17328 
+[  473.306788] 
+Softirq pending bitmask: 0
+[  473.310738] 
+wdog_pretimeout: ksoftirqd tsk state:1;
+Modules linked in:
+[  473.317696] 
+[  473.319286] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.53-lab126 #8
+[  473.325789] task: 808d23c0 ti: 808c8000 task.ti: 808c8000
+[  473.331436] PC is at cpuidle_enter_state+0x54/0xe4
+[  473.336281] LR is at 0x6
+[  473.338846] pc : [<803ad980>]    lr : [<00000006>]    psr: 00000013
+sp : 808c9f68  ip : 0000001a  fp : 00000000
+[  473.349061] r10: 00000000  r9 : 0000006e  r8 : 30a849b7
+[  473.354310] r7 : 00000001  r6 : 808fda90  r5 : 808d5144  r4 : 808d5190
+[  473.360862] r3 : 0000006e  r2 : 323cc591  r1 : 3b9aca00  r0 : 808c9f68
+[  473.367471] Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[  473.374802] Control: 10c53c7d  Table: 9a57c059  DAC: 00000015
+[  473.380603] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.53-lab126 #8
+[  473.387486] [<80012a98>] (unwind_backtrace+0x0/0xec) from [<80011340>] (show_stack+0x10/0x14)
+[  473.396189] [<80011340>] (show_stack+0x10/0x14) from [<803a5930>] (imx2_wdt_isr+0xf4/0x11c)
+[  473.404734] [<803a5930>] (imx2_wdt_isr+0xf4/0x11c) from [<80072874>] (handle_irq_event_percpu+0xcc/0x194)
+[  473.414394] [<80072874>] (handle_irq_event_percpu+0xcc/0x194) from [<8007298c>] (handle_irq_event+0x50/0x78)
+[  473.424297] [<8007298c>] (handle_irq_event+0x50/0x78) from [<80075224>] (handle_fasteoi_irq+0x78/0x15c)
+[  473.433760] [<80075224>] (handle_fasteoi_irq+0x78/0x15c) from [<8007202c>] (generic_handle_irq+0x2c/0x3c)
+[  473.443372] [<8007202c>] (generic_handle_irq+0x2c/0x3c) from [<8000ea28>] (handle_IRQ+0x38/0x84)
+[  473.452206] [<8000ea28>] (handle_IRQ+0x38/0x84) from [<800085bc>] (gic_handle_irq+0x2c/0x54)
+[  473.460687] [<800085bc>] (gic_handle_irq+0x2c/0x54) from [<8000dd80>] (__irq_svc+0x40/0x70)
+[  473.469079] Exception stack(0x808c9f20 to 0x808c9f68)
+[  473.474171] 9f20: 808c9f68 3b9aca00 323cc591 0000006e 808d5190 808d5144 808fda90 00000001
+[  473.482378] 9f40: 30a849b7 0000006e 00000000 00000000 0000001a 808c9f68 00000006 803ad980
+[  473.490577] 9f60: 00000013 ffffffff
+[  473.494132] [<8000dd80>] (__irq_svc+0x40/0x70) from [<803ad980>] (cpuidle_enter_state+0x54/0xe4)
+[  473.502982] [<803ad980>] (cpuidle_enter_state+0x54/0xe4) from [<803adac8>] (cpuidle_idle_call+0xb8/0x150)
+[  473.512578] [<803adac8>] (cpuidle_idle_call+0xb8/0x150) from [<8000eb9c>] (arch_cpu_idle+0x10/0x54)
+[  473.521769] [<8000eb9c>] (arch_cpu_idle+0x10/0x54) from [<80059eb4>] (cpu_startup_entry+0xcc/0x118)
+[  473.531055] [<80059eb4>] (cpu_startup_entry+0xcc/0x118) from [<806bda4c>] (start_kernel+0x318/0x324)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                [  531.292126] watchdog pre-timeout:0, 60 Seconds remained
+[  531.297530] 
+Wdog pre-tout ISR: jiffies(last wdog ping): 11529 jiffies(Now): 23128 
+[  531.305307] 
+Softirq pending bitmask: 0
+[  531.309245] 
+wdog_pretimeout: ksoftirqd tsk state:1;
+Modules linked in:
+[  531.316168] 
+[  531.317754] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.53-lab126 #8
+[  531.324255] task: 808d23c0 ti: 808c8000 task.ti: 808c8000
+[  531.329891] PC is at cpuidle_enter_state+0x54/0xe4
+[  531.334755] LR is at 0x6
+[  531.337309] pc : [<803ad980>]    lr : [<00000006>]    psr: 00000013
+sp : 808c9f68  ip : 0000001a  fp : 00000000
+[  531.347508] r10: 00000000  r9 : 0000007b  r8 : b0c1b950
+[  531.352758] r7 : 00000001  r6 : 808fda90  r5 : 808d5144  r4 : 808d5190
+[  531.359306] r3 : 0000007b  r2 : b337e970  r1 : 3b9aca00  r0 : 808c9f68
+[  531.365884] Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[  531.373214] Control: 10c53c7d  Table: 9a57c059  DAC: 00000015
+[  531.378979] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.53-lab126 #8
+[  531.385754] [<80012a98>] (unwind_backtrace+0x0/0xec) from [<80011340>] (show_stack+0x10/0x14)
+[  531.394417] [<80011340>] (show_stack+0x10/0x14) from [<803a5930>] (imx2_wdt_isr+0xf4/0x11c)
+[  531.402948] [<803a5930>] (imx2_wdt_isr+0xf4/0x11c) from [<80072874>] (handle_irq_event_percpu+0xcc/0x194)
+[  531.412588] [<80072874>] (handle_irq_event_percpu+0xcc/0x194) from [<8007298c>] (handle_irq_event+0x50/0x78)
+[  531.422522] [<8007298c>] (handle_irq_event+0x50/0x78) from [<80075224>] (handle_fasteoi_irq+0x78/0x15c)
+[  531.431973] [<80075224>] (handle_fasteoi_irq+0x78/0x15c) from [<8007202c>] (generic_handle_irq+0x2c/0x3c)
+[  531.441609] [<8007202c>] (generic_handle_irq+0x2c/0x3c) from [<8000ea28>] (handle_IRQ+0x38/0x84)
+[  531.450463] [<8000ea28>] (handle_IRQ+0x38/0x84) from [<800085bc>] (gic_handle_irq+0x2c/0x54)
+[  531.458945] [<800085bc>] (gic_handle_irq+0x2c/0x54) from [<8000dd80>] (__irq_svc+0x40/0x70)
+[  531.467335] Exception stack(0x808c9f20 to 0x808c9f68)
+[  531.472441] 9f20: 808c9f68 3b9aca00 b337e970 0000007b 808d5190 808d5144 808fda90 00000001
+[  531.480660] 9f40: b0c1b950 0000007b 00000000 00000000 0000001a 808c9f68 00000006 803ad980
+[  531.488852] 9f60: 00000013 ffffffff
+[  531.492407] [<8000dd80>] (__irq_svc+0x40/0x70) from [<803ad980>] (cpuidle_enter_state+0x54/0xe4)
+[  531.501239] [<803ad980>] (cpuidle_enter_state+0x54/0xe4) from [<803adac8>] (cpuidle_idle_call+0xb8/0x150)
+[  531.510840] [<803adac8>] (cpuidle_idle_call+0xb8/0x150) from [<8000eb9c>] (arch_cpu_idle+0x10/0x54)
+[  531.520026] [<8000eb9c>] (arch_cpu_idle+0x10/0x54) from [<80059eb4>] (cpu_startup_entry+0xcc/0x118)
+[  531.529257] [<80059eb4>] (cpu_startup_entry+0xcc/0x118) from [<806bda4c>] (start_kernel+0x318/0x324)
+                                        �
+
+U-Boot 2014.04 (Aug 01 2023 - 12:36:45)
+
+CPU:   Freescale i.MX6SL rev1.4 at 792 MHz
+CPU:   Temperature 31 C, calibration data: 0x5744ff5f
+Reset cause: POR
+FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+Board: Heisenberg
+Board Id: P00118078515016T
+S/N: G000K90585230M0U
+I2C:   ready
+DRAM:  MR5=0x6,MR6=0x3 512 MiB
+WARNING: Caches not enabled
+MMC:   FRED::: EXTCSD177=0, 179=48FSL_SDHC: 0, FSL_SDHC: 1, FSL_SDHC: 2
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+REBOOTMODE: 0
+using default bootcmdNormal Boot
+Hit any key to stop autoboot:  3  0 
+uboot >                 
+uboot > 
+----------------------------------------------------------------------
+--- DO NOT TOUCH THE KINDLE: U-Boot caught — script is driving the Kindle now
+----------------------------------------------------------------------
+run setmmcdev
+mmc1(part 0) is current device
+uboot > run loaddt_diags
+
+MMC read: dev # 1, block # 29192, count 256 ... 256 blocks read in 8 msec: OK
+uboot > run loadkernel_diags
+
+MMC read: dev # 1, block # 29392, count 28672 ... 28672 blocks read in 320 msec: OK
+uboot > iminfo 0x80800000
+
+## Checking Image at 80800000 ...
+   Legacy image found
+   Image Name:   Linux-3.10.53-lab126
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    5588456 Bytes = 5.3 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+uboot > setenv bootargs console=ttymxc0,115200 rdinit=/bin/kinit root=/dev/mmcblk0p1 rootwait ro init=/bin/sh
+uboot > bootm 0x80800000 - 0x83000000
+## Booting kernel from Legacy Image at 80800000 ...
+   Image Name:   Linux-3.10.53-lab126
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    5588456 Bytes = 5.3 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 83000000
+   Booting using the fdt blob at 0x83000000
+   Loading Kernel Image ... OK
+   Loading Device Tree to 9fcae000, end 9fcb861a ... OK
+
+Starting kernel ...
+
+Uncompressing Linux... done, booting the kernel.
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.10.53-lab126 (builder@eink-builds) (gcc version 4.9.1 (GCC) ) #8 PREEMPT Tue Aug 1 12:47:03 UTC 2023
+[    0.000000] CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] Machine: Freescale i.MX6 SoloLite (Device Tree), model: Heisenberg P0
+[    0.000000] printk_reserve_buf:863 log_goal_location:0x8fff0000 log_worst_location:0x8fef0000 new_log_buf_len:32768
+[    0.000000] printk_reserve_buf:883 printk log placed at 8fff0000
+[    0.000000] cma: CMA: reserved 32 MiB at 9c000000
+[    0.000000] Memory policy: ECC disabled, Data cache writeback
+[    0.000000] CPU: All CPU(s) started in SVC mode.
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 130048
+[    0.000000] Kernel command line: console=ttymxc0,115200 rdinit=/bin/kinit root=/dev/mmcblk0p1 rootwait ro init=/bin/sh
+[    0.000000] Prink buffer will be relocated to physical address: 8fff0000 va: 00000000 new_log_buf_len:32768
+[    0.000000] Prink buffer will be relocated to physical address: 8fff0000 va: 8fff0000 new_log_buf_len:32768
+[    0.000000] log_buf_len: 32768
+[    0.000000] early log buf free: 30776(93%)
+[    0.000000] PID hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Memory: 512MB = 512MB total
+[    0.000000] Memory: 477344k/477344k available, 46944k reserved, 0K highmem
+[    0.000000] Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xa0800000 - 0xff000000   (1512 MB)
+    lowmem  : 0x80000000 - 0xa0000000   ( 512 MB)
+    pkmap   : 0x7fe00000 - 0x80000000   (   2 MB)
+    modules : 0x7f000000 - 0x7fe00000   (  14 MB)
+      .text : 0x80008000 - 0x806bc054   (6865 kB)
+      .init : 0x806bd000 - 0x808c69c4   (2087 kB)
+      .data : 0x808c8000 - 0x8090ba00   ( 271 kB)
+       .bss : 0x8090ba00 - 0x80932b18   ( 157 kB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000] NR_IRQS:16 nr_irqs:16 16
+[    0.000000] L310 cache controller enabled
+[    0.000000] l2x0: 16 ways, CACHE_ID 0x410000c8, AUX_CTRL 0x32030000, Cache size: 262144 B
+[    0.000000] sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 178956ms
+[    0.000000] Console: colour dummy device 80x30
+[    0.000396] Calibrating delay loop... 789.70 BogoMIPS (lpj=3948544)
+[    0.040121] pid_max: default: 32768 minimum: 301
+[    0.040240] Mount-cache hash table entries: 512
+[    0.044193] CPU: Testing write buffer coherency: ok
+[    0.044393] Setting up static identity map for 0x80517b98 - 0x80517bf0
+[    0.045078] devtmpfs: initialized
+[    0.046589] pinctrl core: initialized pinctrl subsystem
+[    0.046806] regulator-dummy: no parameters
+[    0.048667] NET: Registered protocol family 16
+[    0.055230] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.055753] LAB126 Board id - P00118078515016T
+[    0.055827] Use WDOG1 as reset source
+[    0.060308] syscon 20c8000.anatop: regmap [mem 0x020c8000-0x020c8fff] registered
+[    0.060521] vdd1p1: 800 <--> 1375 mV at 1100 mV 
+[    0.060763] vdd3p0: 2625 <--> 3400 mV at 3000 mV 
+[    0.061017] vdd2p5: 2100 <--> 2850 mV at 2500 mV 
+[    0.061324] cpu: 725 <--> 1450 mV at 1100 mV 
+[    0.061551] vddpu: 725 <--> 1450 mV 
+[    0.061865] vddsoc: 725 <--> 1450 mV at 1175 mV 
+[    0.063479] syscon 20e0000.iomuxc-gpr: regmap [mem 0x020e0000-0x020e0037] registered
+[    0.065246] syscon 21bc000.ocotp-ctrl: regmap [mem 0x021bc000-0x021bffff] registered
+[    0.066784] amp_boost_enable:iMX:MAX98090:BOARD
+[    0.066812] hw-breakpoint: found 5 (+1 reserved) breakpoint and 1 watchpoint registers.
+[    0.066820] hw-breakpoint: maximum watchpoint size is 4 bytes.
+[    0.069548] imx6sl-pinctrl 20e0000.iomuxc: initialized IMX pinctrl driver
+[    0.073805] bio: create slab <bio-0> at 0
+[    0.074789] SCSI subsystem initialized
+[    0.074970] usbcore: registered new interface driver usbfs
+[    0.075033] usbcore: registered new interface driver hub
+[    0.075136] usbcore: registered new device driver usb
+[    0.076315] bd7181x 0-004b: IRQ 276 GPIO 116
+[    0.081762] buck1: 800 <--> 2000 mV at 1300 mV 
+[    0.082905] buck2: 800 <--> 2000 mV at 1300 mV 
+[    0.083672] buck3: 1200 <--> 2700 mV at 1800 mV 
+[    0.084424] buck4: 1100 <--> 1850 mV at 1200 mV 
+[    0.085168] buck5: 1800 <--> 3300 mV at 3200 mV 
+[    0.085933] ldo1: 800 <--> 3300 mV at 3200 mV 
+[    0.086675] ldo2: 800 <--> 3300 mV at 3200 mV 
+[    0.087829] ldo3: 3000 mV 
+[    0.088388] ldo4: 800 <--> 3300 mV at 3200 mV 
+[    0.088940] ldo5: 800 <--> 3300 mV at 1800 mV 
+[    0.089478] dvref: 3000 mV 
+[    0.089594] lpsr: 1800 mV 
+[    0.090130] wled: at 0 mV 0 <--> 25 mA at 0 mA 
+[    0.090975] i2c i2c-0: IMX I2C adapter registered
+[    0.091516] i2c i2c-1: IMX I2C adapter registered
+[    0.091745] i2c i2c-2: IMX I2C adapter registered
+[    0.091844] pps_core: LinuxPPS API ver. 1 registered
+[    0.091853] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.091884] PTP clock support registered
+[    0.092182] MIPI CSI2 driver module loaded
+[    0.092258] Advanced Linux Sound Architecture Driver Initialized.
+[    0.092813] cfg80211: Calling CRDA to update world regulatory domain
+[    0.092845] cfg80211: World regulatory domain updated:
+[    0.092853] cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+[    0.092862] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+[    0.092871] cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+[    0.092879] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+[    0.092887] cfg80211:   (5140000 KHz - 5360000 KHz @ 40000 KHz), (N/A, 3000 mBm)
+[    0.092894] cfg80211:   (5460000 KHz - 5860000 KHz @ 40000 KHz), (N/A, 3000 mBm)
+[    0.093894] pureg-dummy: no parameters
+[    0.094446] Switching to clocksource mxc_timer1
+[    0.101328] NET: Registered protocol family 2
+[    0.101865] TCP established hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.101942] TCP bind hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.101998] TCP: Hash tables configured (established 4096 bind 4096)
+[    0.102043] TCP: reno registered
+[    0.102056] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[    0.102072] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[    0.102234] NET: Registered protocol family 1
+[    0.102444] RPC: Registered named UNIX socket transport module.
+[    0.102455] RPC: Registered udp transport module.
+[    0.102462] RPC: Registered tcp transport module.
+[    0.102467] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.111542] hw perfevents: enabled with ARMv7 Cortex-A9 PMU driver, 7 counters available
+[    0.112053] ldo2p5-dummy: no parameters
+[    0.112714] Bus freq driver module loaded
+[    0.113092] futex hash table entries: 256 (order: -1, 3072 bytes)
+[    0.117775] VFS: Disk quotas dquot_6.5.2
+[    0.117919] Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+[    0.119279] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    0.120035] NFS: Registering the id_resolver key type
+[    0.120071] Key type id_resolver registered
+[    0.120081] Key type id_legacy registered
+[    0.120117] jffs2: version 2.2. (NAND) © 2001-2006 Red Hat, Inc.
+[    0.120555] msgmni has been set to 996
+[    0.123150] io scheduler noop registered
+[    0.123163] io scheduler deadline registered
+[    0.123202] io scheduler cfq registered (default)
+[    0.129406] Serial: IMX driver
+[    0.129682] 2020000.serial: ttymxc0 at MMIO 0x2020000 (irq = 58) is a IMX
+[    0.838379] console [ttymxc0] enabled
+[    0.842477] 2034000.serial: ttymxc2 at MMIO 0x2034000 (irq = 60) is a IMX
+[    0.849651] imx6sl-pinctrl 20e0000.iomuxc: pin MX6SL_PAD_SD1_DAT4 already requested by 20e0000.iomuxc; cannot claim for 2038000.serial
+[    0.861797] imx6sl-pinctrl 20e0000.iomuxc: pin-145 (2038000.serial) status -22
+[    0.869061] imx6sl-pinctrl 20e0000.iomuxc: could not request pin 145 on device 20e0000.iomuxc
+[    0.877622] imx-uart 2038000.serial: Error applying setting, reverse things back
+[    0.885110] 2038000.serial: ttymxc3 at MMIO 0x2038000 (irq = 61) is a IMX
+[    0.892349] serial: Freescale lpuart driver
+[    0.897362] Registering Heisenberg hall sensor platform device
+[    0.904259] imx sema4 driver is registered.
+[    0.912885] brd: module loaded
+[    0.918329] loop: module loaded
+bt_pwrctrl_init called..
+[    0.923861] 
+bt_reset pin obtained is 51
+[    0.928146] 
+bt_dev_wake pin obtained is 138
+[    0.932529] 
+bt_host_wake pin obtained is 93
+[    0.936933] IRQ# for BT HOST WAKE: 253
+bt_pwrctrl_probe probe successful
+[    0.945615] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.952457] usbcore: registered new interface driver usb-storage
+[    0.959351] imx6sl-pinctrl 20e0000.iomuxc: pin MX6SL_PAD_EPDC_PWRCOM already requested by 20e0000.iomuxc; cannot claim for 2184000.usb
+[    0.971502] imx6sl-pinctrl 20e0000.iomuxc: pin-56 (2184000.usb) status -22
+[    0.978419] imx6sl-pinctrl 20e0000.iomuxc: could not request pin 56 on device 20e0000.iomuxc
+[    0.986894] imx_usb 2184000.usb: Error applying setting, reverse things back
+[    0.998057] usb_gadget_state_work: gadget state: not attached
+[    1.444496] imx_usb 2184000.usb: vbus is error
+[    1.448955] imx_usb 2184000.usb: Error occurs during detection: -22
+[    1.455659] mousedev: PS/2 mouse device common for all mice
+[    1.466928] bd7181x-rtc bd7181x-rtc: rtc core: registered bd7181x-rtc as rtc0
+[    1.474583] snvs_rtc 20cc034.snvs-rtc-lp: rtc core: registered 20cc034.snvs-rtc-lp as rtc1
+[    1.482958] i2c /dev entries driver
+[    1.486968] bd7181x-power bd7181x-power: battery_cycle = 0
+[    1.493060] Status Register 1 == 0x0
+[    1.497077] Status Register 2 == 0x0
+[    1.501058] Status Register 3 == 0x40
+[    1.505140] Status Register 4 == 0x0
+[    1.509114] Status Register 5 == 0x80
+[    1.513175] Status Register 6 == 0x0
+[    1.517167] Status Register 7 == 0x0
+[    1.521141] Status Register 8 == 0x2
+[    1.525133] Status Register 9 == 0x0
+[    1.529109] Status Register 10 == 0x0
+[    1.533171] Status Register 11 == 0x0
+[    1.537249] Status Register 12 == 0x0
+[    1.543689] errflags = 2
+[    1.546243] bit1 is set
+[RESET REASONS]: WATCHDOG_RST: Watchdog Triggered Reset 
+ 
+[    1.569458] imx2-wdt 20bc000.wdog: IMX2+ Watchdog Timer enabled. timeout=60s (nowayout=0) imx2_wdt.base=0xa0920000 base pa:0x20bc000 imx2_wdt.clk=0x9a00c100
+[    1.584164] cpuidle: using governor ladder
+[    1.588310] cpuidle: using governor menu
+[    1.592301] sdhci: Secure Digital Host Controller Interface driver
+[    1.598516] sdhci: Copyright(c) Pierre Ossman
+[    1.602958] sdhci-pltfm: SDHCI platform and OF driver helper
+[    1.612741] mmc1: no vqmmc regulator found
+[    1.617125] mmc1: Not allowing HS200
+[    1.620730] mmc1: no vmmc regulator found
+[    1.664494] mmc1: SDHCI controller on 2190000.usdhc [2190000.usdhc] using DMA
+[    1.674881] mmc0: no vqmmc regulator found
+[    1.678990] mmc0: Not allowing HS200
+[    1.682572] mmc0: no vmmc regulator found
+[    1.724488] mmc0: SDHCI controller on 2194000.usdhc [2194000.usdhc] using DMA
+[    1.733457] usbcore: registered new interface driver usbhid
+[    1.739076] usbhid: USB HID core driver
+[    1.743764] NET: Registered protocol family 26
+[    1.750422] TCP: cubic registered
+[    1.753750] NET: Registered protocol family 17
+[    1.758291] 8021q: 802.1Q VLAN Support v1.8
+[    1.762524] Key type dns_resolver registered
+VFP support v0.3: implementor 41 architecture 3 part 30 variant 9 rev 4
+[    1.797885] ldo5: disabling
+[    1.805500] ldo4: disabling
+[    1.817118] regulator-dummy: disabling
+[    1.821074] imx mcc test is registered.
+[    1.825757] bd7181x-rtc bd7181x-rtc: setting system clock to 2001-01-01 01:15:40 UTC (978311740)
+[    1.837760] ALSA device list:
+[    1.840743]   No soundcards found.
+[    1.847839] Freeing unused kernel memory: 2084K (806bd000 - 808c6000)
+IP-Config: no devices to configure
+kinit: Cannot open root device dev(179,1)
+kinit: init not found!
+[    1.874639] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
+
+
+== watch ended, log in logs/stock-kinit.log
+
+==================== RUN FINISHED — leave the Kindle alone, Claude is reading the log ====================
