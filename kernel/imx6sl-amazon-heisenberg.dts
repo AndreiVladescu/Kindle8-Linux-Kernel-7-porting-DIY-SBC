@@ -66,6 +66,23 @@
 		power-off-delay-us = <300>;
 	};
 
+	thermal-zones {
+		/* panel temperature from the FP9928; read on demand by the EPDC, never polled */
+		epd-thermal {
+			polling-delay = <0>;
+			polling-delay-passive = <0>;
+			thermal-sensors = <&epd_pmic>;
+
+			trips {
+				epd_hot: epd-hot {
+					temperature = <60000>;
+					hysteresis = <2000>;
+					type = "hot";		/* notification only, never a shutdown */
+				};
+			};
+		};
+	};
+
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0x80000000 0x20000000>;
@@ -213,6 +230,7 @@
 	V3P3-supply = <&ldo5_reg>;
 	VCOM-supply = <&epd_vcom>;
 	DISPLAY-supply = <&epd_vposneg>;
+	epd-thermal-zone = "epd-thermal";
 	vscan-holdoff = <4>;
 	sdoed-width = <10>;
 	sdoed-delay = <20>;
@@ -258,6 +276,8 @@
 		shutdown-gpios = <&gpio2 19 GPIO_ACTIVE_HIGH>;		/* BT_REG_ON */
 		device-wakeup-gpios = <&gpio5 10 GPIO_ACTIVE_HIGH>;	/* BT_DEV_WAKE */
 		/* host-wakeup (gpio3 29) left out until its polarity is known */
+		/* Broadcom placeholder 43:43:A1:12:1F:AC is replaced by this (bytes little-endian) */
+		local-bd-address = [30 00 00 38 4b 02];	/* 02:4B:38:00:00:30 */
 		clocks = <&pmic>;
 		clock-names = "lpo";
 		max-speed = <3000000>;
