@@ -1,7 +1,7 @@
 # E-ink display — bring-up notes (2026-11-01)
 
-Not working under mainline. Everything below comes from the stock rootfs, the stock DTB and the stock
-`mxc_epdc_fb.ko`; nothing was driven on the hardware yet.
+Not displaying under mainline yet. Sources: the stock rootfs, the stock DTB and `mxc_epdc_fb.ko`, and Amazon's GPL
+kernel source. On the hardware so far only the read-only FP9928 temperature check (phase 1) has been run.
 
 ## Panel and waveform
 - Panel: **ED060SCSC1** (6", 800×600, E Ink Carta), from the waveform file name.
