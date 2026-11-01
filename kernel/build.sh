@@ -14,7 +14,7 @@ esac
 FRAGS="$R/kernel/heisenberg.fragment"
 [ -f "$R/kernel/$V.fragment" ] && FRAGS="$FRAGS $R/kernel/$V.fragment"
 export ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-cp "$R/kernel/imx6sl-amazon-heisenberg.dts" "$K/arch/arm/boot/dts/nxp/imx/"
+cp "$R/kernel/imx6sl-amazon-heisenberg.dts" "$R/kernel/overclock-1104.dtsi" "$K/arch/arm/boot/dts/nxp/imx/"
 for p in "$R"/kernel/patches/*.patch; do      # idempotent: skip patches that are already applied
   [ -e "$p" ] || continue
   if git -C "$K" apply --reverse --check "$p" 2>/dev/null; then :; else git -C "$K" apply "$p" && echo "== applied $(basename "$p")"; fi

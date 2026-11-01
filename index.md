@@ -465,6 +465,59 @@ the cracked band of the panel empty.
 *The status screen on the panel. The rows are laid out around the cracked band, which stays blank between
 "Disk" and "SoC".*
 
+## CPU frequency
+
+U-Boot leaves the Cortex-A9 at 792 MHz. With the uniprocessor kernel and the L2 enabled, mainline's
+`imx6q-cpufreq` runs the `imx6sl.dtsi` operating points through the SoC's internal LDOs: 996 MHz at 1.275 V,
+and down to 396 MHz when idle. This chip's speed-grade fuse says 996 MHz. An extra 1104 MHz point at 1.3 V, the
+VDD_ARM_CAP maximum, passed a 10-minute `stress-ng --verify` run with all CPU methods plus a memory test,
+peaking at 48.1 °C, and is now the default (`kernel/overclock-1104.dtsi`). It is outside NXP's rating.
+
+y-cruncher has no 32-bit ARM build, so the benchmark is π to 3000 digits with `bc` on one core. The digits from
+every run are hashed and compared with the same computation on a PC. They matched at all four frequencies.
+
+<svg class="viz-root" viewBox="0 0 640 320" width="100%" role="img" aria-labelledby="pi-chart-title pi-chart-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="pi-chart-title">Time to compute pi to 3000 digits at each CPU frequency</title>
+<desc id="pi-chart-desc">396 MHz: 302 s, 792 MHz: 170 s, 996 MHz: 144 s, 1104 MHz: 132 s. Lower is faster.</desc>
+<line class="viz-grid" x1="56" x2="616" y1="256.0" y2="256.0"/>
+<text class="viz-axis" x="48" y="260.0" text-anchor="end">0 s</text>
+<line class="viz-grid" x1="56" x2="616" y1="184.8" y2="184.8"/>
+<text class="viz-axis" x="48" y="188.8" text-anchor="end">100 s</text>
+<line class="viz-grid" x1="56" x2="616" y1="113.5" y2="113.5"/>
+<text class="viz-axis" x="48" y="117.5" text-anchor="end">200 s</text>
+<line class="viz-grid" x1="56" x2="616" y1="42.2" y2="42.2"/>
+<text class="viz-axis" x="48" y="46.2" text-anchor="end">300 s</text>
+<g class="viz-mark"><title>396 MHz: 302 s (+110 % vs 996 MHz)</title><rect class="viz-hit" x="60.0" y="28" width="132.0" height="228"/><path class="viz-bar" d="M104.0,256.0 V44.8 Q104.0,40.8 108.0,40.8 H144.0 Q148.0,40.8 148.0,44.8 V256.0 Z"/></g>
+<text class="viz-value" x="126.0" y="32.8" text-anchor="middle">302 s</text>
+<text class="viz-axis viz-strong" x="126.0" y="278" text-anchor="middle">396 MHz</text>
+<text class="viz-axis" x="126.0" y="296" text-anchor="middle">idle</text>
+<g class="viz-mark"><title>792 MHz: 170 s (+18 % vs 996 MHz)</title><rect class="viz-hit" x="200.0" y="28" width="132.0" height="228"/><path class="viz-bar" d="M244.0,256.0 V138.9 Q244.0,134.9 248.0,134.9 H284.0 Q288.0,134.9 288.0,138.9 V256.0 Z"/></g>
+<text class="viz-value" x="266.0" y="126.9" text-anchor="middle">170 s</text>
+<text class="viz-axis viz-strong" x="266.0" y="278" text-anchor="middle">792 MHz</text>
+<text class="viz-axis" x="266.0" y="296" text-anchor="middle">U-Boot default</text>
+<g class="viz-mark"><title>996 MHz: 144 s</title><rect class="viz-hit" x="340.0" y="28" width="132.0" height="228"/><path class="viz-bar" d="M384.0,256.0 V157.4 Q384.0,153.4 388.0,153.4 H424.0 Q428.0,153.4 428.0,157.4 V256.0 Z"/></g>
+<text class="viz-value" x="406.0" y="145.4" text-anchor="middle">144 s</text>
+<text class="viz-axis viz-strong" x="406.0" y="278" text-anchor="middle">996 MHz</text>
+<text class="viz-axis" x="406.0" y="296" text-anchor="middle">rated</text>
+<g class="viz-mark"><title>1104 MHz: 132 s (-8 % vs 996 MHz)</title><rect class="viz-hit" x="480.0" y="28" width="132.0" height="228"/><path class="viz-bar" d="M524.0,256.0 V166.0 Q524.0,162.0 528.0,162.0 H564.0 Q568.0,162.0 568.0,166.0 V256.0 Z"/></g>
+<text class="viz-value" x="546.0" y="154.0" text-anchor="middle">132 s</text>
+<text class="viz-axis viz-strong" x="546.0" y="278" text-anchor="middle">1104 MHz</text>
+<text class="viz-axis" x="546.0" y="296" text-anchor="middle">overclock</text>
+<line class="viz-baseline" x1="56" x2="616" y1="256.0" y2="256.0"/>
+</svg>
+
+*Time to compute π to 3000 digits. Lower is faster.*
+
+| CPU | π, 3000 digits | vs 996 MHz | sysbench primes |
+|---|---|---|---|
+| 396 MHz (idle) | 302 s | +110 % | 6.71 /s |
+| 792 MHz (U-Boot default) | 170 s | +18 % | 13.50 /s |
+| 996 MHz (rated) | 144 s | — | 16.80 /s |
+| 1104 MHz (overclock) | 132 s | −8 % | 18.18 /s |
+
+Purely compute-bound code scales with the clock (`stress-ng` int64: +26 % from 792 to 996 MHz). Code that
+mostly waits on memory gains less, because DRAM speed does not change (matrix multiply: +7.5 %).
+
 ---
 
 ## Current state
@@ -472,7 +525,7 @@ the cracked band of the panel empty.
 | Function | Status |
 |---|---|
 | Boot | stock U-Boot → Linux 7.3.1 (uniprocessor, L2 on) → Alpine 3.24 on p4, SSH after about 20 s |
-| CPU | 396–996 MHz (cpufreq, ondemand); 1104 MHz overclock tested separately, see `docs/cpufreq.md` |
+| CPU | 396–1104 MHz (cpufreq, ondemand); 1104 MHz is an overclock, see `docs/cpufreq.md` |
 | Storage | eMMC 8-bit HS-DDR; ext4 root, 2.7 GB free |
 | Network | WiFi (brcmfmac) with mDNS `kindle8.local`; USB Ethernet with automatic recovery |
 | Bluetooth | BCM43430A1 via hci_uart/btbcm, BlueZ |

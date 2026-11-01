@@ -402,3 +402,9 @@
 	dr_mode = "peripheral";
 	status = "okay";
 };
+
+/*
+ * Default since 2026-11-01: 1104 MHz overclock (part is fused for 996 MHz). Passed a 10 min
+ * stress-ng --verify run at 48 degC max; see docs/cpufreq.md. Remove this line to return to the rated 996 MHz.
+ */
+#include "overclock-1104.dtsi"

@@ -137,3 +137,24 @@ html[data-theme="light"]{
 #header_wrap #project_tagline{
   text-shadow: 0 2px 8px rgba(0,0,0,.75);
 }
+
+/* ── Charts (inline SVG) ──────────────────────────────────────────────────
+   Single-series bars: validated blue (dark #3987e5 on #161a20, 4.8:1;
+   light #2a78d6 on #f2f2f2, 3.9:1). Text uses text tokens, never the series colour.
+   ────────────────────────────────────────────────────────────────────── */
+.viz-root{
+  --viz-bar: #3987e5;
+  --viz-text: var(--text-main, #dbe1e8);
+  --viz-muted: var(--text-muted, #98a2ad);
+  --viz-grid: var(--border, #2b323c);
+  display: block; max-width: 100%; height: auto; font-family: inherit;
+}
+html[data-theme="light"] .viz-root{ --viz-bar: #2a78d6; --viz-grid: #dcdcdc; }
+.viz-bar{ fill: var(--viz-bar); }
+.viz-mark:hover .viz-bar{ opacity: .82; }
+.viz-hit{ fill: transparent; }
+.viz-grid{ stroke: var(--viz-grid); stroke-width: 1; }
+.viz-baseline{ stroke: var(--viz-muted); stroke-width: 1; }
+.viz-axis{ fill: var(--viz-muted); font-size: 13px; }
+.viz-strong{ fill: var(--viz-text); font-weight: 600; }
+.viz-value{ fill: var(--viz-text); font-size: 14px; font-weight: 600; }
