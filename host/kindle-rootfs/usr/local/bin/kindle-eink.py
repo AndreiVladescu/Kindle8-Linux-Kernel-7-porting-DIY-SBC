@@ -52,35 +52,42 @@ def fmt_uptime(sec):
     return f"{d}d {h}h {sec // 60}m" if d else f"{h}h {sec // 60}m"
 
 
+# Rows (portrait y) where the panel's e-ink layer is physically damaged on this unit: kept blank.
+SKIP = tuple(int(v) for v in os.environ.get("EINK_SKIP", "495-595").split("-"))
+
+
 def render(st):
     img = Image.new("L", (W, H), 255)
     d = ImageDraw.Draw(img)
-    m = 36                                                    # margin
+    m = 60                                                    # margin (clears a dead spot at the left edge)
 
-    d.text((m, 36), st.get("hostname", "kindle8"), font=F_TITLE, fill=0)
-    d.text((m, 116), "Kindle 8 · Linux " + st.get("kernel", "?").split()[0], font=F_SUB, fill=80)
-    d.line((m, 160, W - m, 160), fill=0, width=3)
+    d.text((m, 30), st.get("hostname", "kindle8"), font=F_TITLE, fill=0)
+    d.text((m, 108), "Linux " + st.get("kernel", "?").split()[0] + " · updated " + time.strftime("%H:%M"),
+           font=F_SUB, fill=80)
+    d.line((m, 150, W - m, 150), fill=0, width=3)
 
     b = st.get("battery", {})
     w = st.get("wifi") or {}
     rows = [
-        ("IP address", wifi_ip()),
+        ("IP", wifi_ip()),
         ("Uptime", fmt_uptime(st.get("uptime_s", 0))),
-        ("Load", " ".join(st.get("load", []))),
-        ("Memory free", f'{st.get("mem_available_mb", "?")} / {st.get("mem_total_mb", "?")} MB'),
-        ("Disk free", f'{st.get("disk_free_mb", 0) / 1024:.1f} / {st.get("disk_total_mb", 0) / 1024:.1f} GB'),
-        ("SoC temp", f'{st.get("soc_temp_c", "?")} °C'),
-        ("Battery", f'{b.get("capacity_pct", "?")} %  {b.get("status", "")}'),
-        ("WiFi", f'{w.get("signal_dbm", "?")} dBm' if w else "not connected"),
+        ("Load", " ".join(st.get("load", [])[:2])),
+        ("Memory", f'{st.get("mem_available_mb", "?")} MB free'),
+        ("Disk", f'{st.get("disk_free_mb", 0) / 1024:.1f} GB free'),
+        ("SoC", f'{st.get("soc_temp_c", "?")} °C'),
+        ("Battery", f'{b.get("capacity_pct", "?")} % {b.get("status", "")}'),
+        ("WiFi", f'{w.get("signal_dbm", "?")} dBm' if w else "off"),
     ]
-    y = 180
+    row_h = 58
+    y = 172
     for label, value in rows:
-        d.text((m, y), label, font=F_LABEL, fill=90)
-        d.text((m, y + 32), str(value), font=F_VALUE, fill=0)
-        y += 68
+        if y + row_h > SKIP[0] and y < SKIP[1]:               # jump over the damaged band
+            y = SKIP[1] + 12
+        d.text((m, y + 6), label, font=F_LABEL, fill=90)
+        tw = d.textlength(str(value), font=F_VALUE)
+        d.text((W - m - tw, y + 2), str(value), font=F_VALUE, fill=0)
+        y += row_h
         d.line((m, y - 6, W - m, y - 6), fill=200, width=1)
-
-    d.text((m, H - 44), "updated " + time.strftime("%Y-%m-%d %H:%M"), font=F_SMALL, fill=80)
     return img
 
 
