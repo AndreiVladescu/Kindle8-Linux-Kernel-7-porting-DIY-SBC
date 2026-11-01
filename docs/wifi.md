@@ -11,7 +11,7 @@
 | Association | `wpa_supplicant` service (boot), `/etc/wpa_supplicant/wpa_supplicant.conf` mode 600, **PSK hash only** (no plaintext; derived on the PC with PBKDF2-HMAC-SHA1, 4096 rounds, salt = SSID) |
 | IP | ifupdown-ng `iface wlan0 inet dhcp`, `up iw dev wlan0 set power_save off` |
 | Routing | default via wlan0 (metric 303); usb0 fallback default via 192.168.7.1 metric 900 |
-| Name | avahi → `kindle8.local` |
+| Name | avahi on wlan0 only → `kindle8.local` (USB: use 192.168.7.2) |
 
 ## Gotchas
 - **Power-save must be off**: with it on, the Kindle could reach the LAN but nothing could reach the Kindle (ARP requests from the LAN were never answered: PC showed `INCOMPLETE`).

@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+description="Kindle 8 SBC web server (status page + /srv/www) on port 80"
+command=/usr/bin/python3
+command_args="/usr/local/bin/kindle-web.py"
+command_user="www:www"
+capabilities="^cap_net_bind_service"
+supervisor=supervise-daemon
+output_logger="logger -t kindle-web"
+error_logger="logger -t kindle-web"
+
+depend() {
+	need net
+	after firewall
+}
+
+start_pre() {
+	checkpath -d -o www:www -m 0755 /srv/www
+}
