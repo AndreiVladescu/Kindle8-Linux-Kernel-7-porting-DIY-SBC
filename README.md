@@ -2,7 +2,7 @@
 
 A Kindle 8 (2016, board "Heisenberg", NXP i.MX6SoloLite) with a broken e-ink
 panel, converted into a headless Alpine Linux machine running a mainline
-Linux 7.3.1 kernel: WiFi, Bluetooth, USB Ethernet, battery-backed RTC and
+Linux 7.3.1 kernel: WiFi, Bluetooth, USB Ethernet, e-ink status screen, battery-backed RTC and
 battery readings, with stock U-Boot left unmodified.
 
 Write-up: <https://andreivladescu.github.io/Kindle8-Linux-Kernel-7-porting-DIY-SBC>

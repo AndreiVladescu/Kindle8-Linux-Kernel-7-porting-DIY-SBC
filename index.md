@@ -26,7 +26,7 @@ partitions on the eMMC, and the full original image is kept.
 | PMIC | ROHM BD71815 (regulators, RTC, charger) |
 | Wireless | Broadcom BCM43430/4343W: WiFi on SDIO, Bluetooth on UART |
 | Stock software | U-Boot 2014.04, Linux 3.10.53-lab126, firmware 5.16.2.1.1 |
-| Result | Linux 7.3.1, Alpine 3.24, WiFi, Bluetooth, battery-backed RTC, battery percentage |
+| Result | Linux 7.3.1, Alpine 3.24, WiFi, Bluetooth, battery-backed RTC, battery percentage, e-ink status screen |
 
 Everything here was done over the serial console and the micro-USB port, since the screen couldn't be used to click anything.
 Shoutout to the guys at [ebookrepairs.com](https://ebookrepairs.com/kindle-tips/how-can-i-connect-a-serial-port-to-a-kindle/) for making this RE easier on the PCB side.
@@ -406,6 +406,64 @@ The SoC temperature comes from the thermal zone of type `imx_thermal_zone`.
 Zone 0 is the battery's, and it reads ten times too low because of the
 BD71815 temperature unit issue described above.
 
+## The e-ink panel
+
+The panel was assumed dead, but after a bit of research it turned out to only be partially cracked. Plugged back into
+its FPC connector, it could be brought up under mainline too. Three pieces were missing: a driver for the panel's
+power chip, a display controller driver, and the panel-specific data.
+
+**Finding the facts.** The e-ink power chip is a FitiPower FP9928 on I2C1 at 0x48. The stock driver for it lives
+inside Amazon's `mxc_epdc_fb.ko`; disassembling it showed which registers it uses: 0x00 for the panel temperature
+and 0x02 for VCOM. The enable pins are set from Amazon's board code inside the kernel image, so they came from
+Amazon's GPL source release for this exact firmware build (`Kindle_src_5.16.2.1.1_4097490002.tar.gz`, listed as
+"Kindle (8th Generation)"):
+
+```
+#define MX6SL_PIN_PM_EPD_EN    IMX_GPIO_NR(3, 25)  /* KEY_ROW0: high-voltage rails */
+#define MX6SL_PIN_PM_EPD_ENOP  IMX_GPIO_NR(3, 27)  /* KEY_ROW1: VCOM output        */
+```
+
+The same source gave the VCOM conversion (`116 - (2500 - mV) / 21`; this panel's 2860 mV becomes 133) and the
+panel timing. The waveform, the panel-specific table of voltage sequences, was in the region at eMMC sector
+0xE208 that the slot layout had been avoiding: a small FAT filesystem holding
+`V220_C295_BDCE01_ED060SCSC1_TC.wrf.gz` for the 800×600 ED060SCSC1 panel. Amazon's update scripts reformat that
+region if they fail to mount it.
+
+Before any kernel change, the stock temperature read was reproduced from userspace: raise PM_EPD_EN, read register
+0x00, lower it. The FP9928 answered with 27 °C from the panel's thermistor, so the FPC and the panel's sense line
+were intact.
+
+**Power chip driver.** Mainline has a driver for the related FP9931, but it is not register-compatible: on the
+FP9931, register 0x02 sets the high-voltage rails, while on the FP9928 it is VCOM. A new `fp9928` regulator
+driver (`kernel/patches/0002`) follows the vendor sequence. EN powers the chip and the ±HV rails, and VCOM is
+rewritten after every power-up, because the chip forgets it while EN is low. A second GPIO switches the VCOM
+output, and hwmon reports the temperature. No other register is written, since the FP9928's rail voltage
+register is not documented.
+
+**Display controller driver.** The i.MX EPDC driver is Andreas Kemnade's DRM driver
+([RFC](https://lore.kernel.org/all/Yi0A5inJh0Whkh5n@latitude/T/)), taken from the newest branch of his tree
+(`kobo/epdc-drm-6.8`). It needed three API updates for 7.3: fbdev emulation through `drm_client_setup()`, the
+removed `drm_driver.date` field, and `remove()` returning void (`kernel/patches/0003`). Amazon's `.wrf` turned out to
+be in the EPDC firmware format the driver loads, so the panel's own waveform is installed unchanged as
+`imx/epdc/epdc.fw`. The first test pattern came out correctly, rotated by 90° because of how the panel is mounted.
+
+<img src="./img/eink-test-pattern.jpeg" width="100%" alt="E-ink panel showing a test pattern: black and white halves and an 8-step grey ramp, with dark smudges in the lower white area">
+
+*First image under Linux 7.3: black, white and an 8-step grey ramp. The dark smudges are cracks in the panel
+and stay in the same place regardless of content.*
+
+The Linux text console also attached to the framebuffer, and its blinking cursor kept the panel refreshing
+continuously, with the high voltage on the whole time (over 7000 EPDC interrupts). With the console detached, an
+update costs two interrupts, and the driver switches HV and VCOM off right after it.
+
+A small service (`kindle-eink`) renders the same data as the web server into a portrait image with Pillow,
+rotates it to the panel's native orientation, and writes it to `/dev/fb0` every five minutes. The layout leaves
+the cracked band of the panel empty.
+
+<img src="./img/eink-status.jpeg" width="100%" alt="The Kindle's e-ink panel showing its status screen: hostname kindle8, IP address, uptime, load, memory, disk, SoC temperature, battery and WiFi signal">
+
+*The status screen on the panel (first version, before the layout was moved away from the damaged band).*
+
 ---
 
 ## Current state
@@ -417,6 +475,7 @@ BD71815 temperature unit issue described above.
 | Network | WiFi (brcmfmac) with mDNS `kindle8.local`; USB Ethernet with automatic recovery |
 | Bluetooth | BCM43430A1 via hci_uart/btbcm, BlueZ |
 | Power | BD71815: RTC, charger and battery readings, capacity estimate; regulators read-only |
+| Display | e-ink 800×600 via FP9928 + EPDC (mxc-epdc), status screen every 5 min |
 | Watchdog | imx2_wdt |
 
 <img src="./img/htop.png" width="100%" alt="htop on the Kindle: 20.8 MB of 495 MB RAM in use, load 0.40, with wpa_supplicant, udhcpc, dbus, avahi, bluetoothd, chronyd, dropbear, getty, usb-link-watchdog and the Python web server running">
@@ -436,8 +495,10 @@ web server all running.*
 - The WiFi and Bluetooth host-wake interrupts (`&gpio3 31`, `&gpio3 29`)
   are not wired; the WiFi interrupt is in-band.
 - The battery OCV table needs calibration from a full discharge.
-- No suspend. No display support (the panel is broken, and the EPDC and
-  FP9928 are not described).
+- No suspend.
+- Display: the EPDC pixel clock runs at 22.5 MHz instead of 25.26 MHz, there is no
+  EPD thermal zone yet (the driver uses 20 °C), and the text console should be removed
+  from the kernel instead of being detached at runtime.
 
 ## Reproducing
 
