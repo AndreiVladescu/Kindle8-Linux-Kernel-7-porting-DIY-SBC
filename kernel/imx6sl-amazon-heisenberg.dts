@@ -225,6 +225,11 @@
 	compatible = "fsl,imx6sl-epdc";
 	clocks = <&clks IMX6SL_CLK_EPDC_AXI>, <&clks IMX6SL_CLK_EPDC_PIX>;
 	clock-names = "epdc_axi", "epdc_pix";		/* names the driver requests */
+	/* pix clock from the otherwise unused video PLL: 1010.52 MHz /4 (pll5_video_div) /10 = 25.263000 MHz,
+	 * exactly the rate the driver asks for (the i.MX dividers round down) */
+	assigned-clocks = <&clks IMX6SL_CLK_EPDC_PIX_SEL>, <&clks IMX6SL_CLK_PLL5_VIDEO>;
+	assigned-clock-parents = <&clks IMX6SL_CLK_PLL5_VIDEO_DIV>;
+	assigned-clock-rates = <0>, <1010520000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_epdc>;
 	V3P3-supply = <&ldo5_reg>;

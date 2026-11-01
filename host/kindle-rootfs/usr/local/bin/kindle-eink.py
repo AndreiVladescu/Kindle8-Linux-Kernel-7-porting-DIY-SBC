@@ -9,8 +9,10 @@ between updates the EPDC driver switches the panel's high voltage and VCOM off.
 Orientation: the panel is mounted rotated relative to the EPDC scan, so a portrait pixel
 (px, py) goes to framebuffer (x=py, y=599-px) — Pillow's ROTATE_90 (counter-clockwise).
 """
+import fcntl
 import json
 import os
+import struct
 import socket
 import time
 import urllib.request
@@ -102,12 +104,28 @@ def show(img):
         f.write(out)
 
 
+FBIOGET_VSCREENINFO, FBIOPUT_VSCREENINFO = 0x4600, 0x4601
+FB_ACTIVATE_FORCE = 128
+
+
+def activate_display():
+    """Force fb_set_par once: the DRM fbdev emulation only does the EPDC modeset there.
+    Without a framebuffer console nothing else calls it, and writes to /dev/fb0 never reach the panel."""
+    with open(FB, "r+b", buffering=0) as f:
+        var = bytearray(160)                                       # struct fb_var_screeninfo
+        fcntl.ioctl(f, FBIOGET_VSCREENINFO, var)
+        activate = struct.unpack_from("<I", var, 84)[0]            # .activate
+        struct.pack_into("<I", var, 84, activate | FB_ACTIVATE_FORCE)
+        fcntl.ioctl(f, FBIOPUT_VSCREENINFO, var)
+
+
 def fetch():
     with urllib.request.urlopen(STATUS_URL, timeout=10) as r:
         return json.load(r)
 
 
 def main():
+    activate_display()
     while True:
         try:
             show(render(fetch()))
