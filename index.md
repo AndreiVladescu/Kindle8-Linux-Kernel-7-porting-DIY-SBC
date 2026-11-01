@@ -460,9 +460,10 @@ A small service (`kindle-eink`) renders the same data as the web server into a p
 rotates it to the panel's native orientation, and writes it to `/dev/fb0` every five minutes. The layout leaves
 the cracked band of the panel empty.
 
-<img src="./img/eink-status.jpeg" width="100%" alt="The Kindle's e-ink panel showing its status screen: hostname kindle8, IP address, uptime, load, memory, disk, SoC temperature, battery and WiFi signal">
+<img src="./img/eink-status.jpeg" width="100%" alt="The Kindle's e-ink panel showing its status screen: hostname kindle8, IP address, uptime, load, memory and disk above a blank band over the cracked area, then SoC temperature, battery and WiFi signal">
 
-*The status screen on the panel (first version, before the layout was moved away from the damaged band).*
+*The status screen on the panel. The rows are laid out around the cracked band, which stays blank between
+"Disk" and "SoC".*
 
 ---
 
