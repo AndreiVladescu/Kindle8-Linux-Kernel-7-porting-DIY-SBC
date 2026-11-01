@@ -3,7 +3,13 @@
 
 <button id="theme-toggle" type="button" aria-label="Switch to light theme" title="Switch to light theme">🌙</button>
 
-## Linux 7.3 on a broken-screen Kindle 8
+## How this started
+
+I recently got a Kindle 8 with a non-working display. After trying to make it work, I gave up on repairing.
+However, I still wanted to tinker with it and make it run in my Frankenstein-homelab, so what better use to have than a pi zero-type of SBC (it only has one core with 512MB RAM).
+
+
+## Specs of the Kindle 8
 
 A Kindle 8 with a cracked e-ink panel is an i.MX6SoloLite board with 512 MB
 of RAM, 4 GB of eMMC, WiFi, Bluetooth and a battery. This write-up covers
@@ -22,17 +28,32 @@ partitions on the eMMC, and the full original image is kept.
 | Stock software | U-Boot 2014.04, Linux 3.10.53-lab126, firmware 5.16.2.1.1 |
 | Result | Linux 7.3.1, Alpine 3.24, WiFi, Bluetooth, battery-backed RTC, battery percentage |
 
-Everything here was done over the serial console and the micro-USB port.
-The panel is dead and was never used.
+Everything here was done over the serial console and the micro-USB port, since the screen couldn't be used to click anything.
+Shoutout to the guys at [ebookrepairs.com](https://ebookrepairs.com/kindle-tips/how-can-i-connect-a-serial-port-to-a-kindle/) for making this RE easier on the PCB side.
+
 
 ---
 
 ## Serial console and a root shell
 
-The board exposes `ttymxc0` at 115200 8N1. It was connected through an
-ESP32-based Bus Pirate running as a UART bridge, which shows up on the PC as
-`/dev/ttyACM0`. Pressing a key during the three-second countdown stops
-U-Boot at its prompt.
+The board exposes `ttymxc0` at 115200 8N1 on test pads near the top edge.
+It was connected through an ESP32-based Bus Pirate running as a UART bridge,
+which shows up on the PC as `/dev/ttyACM0`. Pressing a key during the
+three-second countdown stops U-Boot at its prompt.
+
+<img src="./img/esp32_bit_pirate_dock_re.jpeg" width="100%" alt="Kindle 8 mainboard (30-001931 REV 01) with PCBite probes on the UART test pads, wired to an ESP32 Bus Pirate dock">
+
+*The Kindle 8 mainboard (30-001931 REV 01), with PCBite probes on the UART
+pads and the ESP32 Bus Pirate dock on the right. The i.MX6SoloLite is the
+large chip in the middle, the battery on the left.*
+
+On the Bus Pirate side this is `mode uart` with RX on GPIO 15, TX on GPIO 16,
+115200 8N1, followed by `bridge`:
+
+<img src="./img/bridging_UART.jpeg" width="100%" alt="minicom session: Bus Pirate switched to UART mode and bridge, followed by the Kindle's U-Boot 2014.04 banner and the uboot prompt">
+
+*Bus Pirate set to UART bridge mode, then the Kindle's U-Boot banner and
+prompt. Board ID and serial number are redacted.*
 
 The stock root account is locked (`root:!` in `/etc/shadow`), so the
 serial login is not usable. U-Boot, however, accepts a modified kernel
@@ -69,6 +90,11 @@ The PC sees three read-only disks, and `dd` copied the 3.9 GB user area in
 110 s (35 MB/s). The read-only flag mattered: the desktop auto-mounted the
 ext3 root partition and tried to write its journal when unmounting it,
 and the gadget refused.
+
+<img src="./img/mounting_rootfs.jpeg" width="100%" alt="File manager showing the Kindle's 472 MB root partition auto-mounted on the PC over USB: app, bin, chroot, dev, etc, lib, mnt, opt, proc, sbin, sys, tmp, usr, var">
+
+*The stock root partition (p1), auto-mounted read-only by the desktop once
+the eMMC was exported over USB.*
 
 What the image contains:
 
@@ -408,4 +434,4 @@ procedure are in [`docs/boot-slots.md`](./docs/boot-slots.md).
 
 All work was done on hardware I own. The eMMC image and Amazon's binaries
 (firmware, Bluetooth patches, nvram) are not distributed here. The device's
-serial number and board ID have been redacted from the logs.
+serial number and board ID have been redacted from the logs and screenshots.
