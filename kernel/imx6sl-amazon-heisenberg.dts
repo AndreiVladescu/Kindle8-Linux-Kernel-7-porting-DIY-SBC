@@ -280,7 +280,7 @@
 		pinctrl-0 = <&pinctrl_bt>;
 		shutdown-gpios = <&gpio2 19 GPIO_ACTIVE_HIGH>;		/* BT_REG_ON */
 		device-wakeup-gpios = <&gpio5 10 GPIO_ACTIVE_HIGH>;	/* BT_DEV_WAKE */
-		/* host-wakeup (gpio3 29) left out until its polarity is known */
+		host-wakeup-gpios = <&gpio3 29 GPIO_ACTIVE_HIGH>;	/* BT_HOST_WAKE; polarity sent to the chip by hci_bcm */
 		/* Broadcom placeholder 43:43:A1:12:1F:AC is replaced by this (bytes little-endian) */
 		local-bd-address = [30 00 00 38 4b 02];	/* 02:4B:38:00:00:30 */
 		clocks = <&pmic>;
@@ -387,7 +387,10 @@
 	wifi: wifi@1 {
 		compatible = "brcm,bcm4329-fmac";
 		reg = <1>;
-		/* OOB host-wake (gpio3 31) can be added later; in-band SDIO IRQ first */
+		/* out-of-band interrupt on WL_HOST_WAKE; brcmfmac programs the chip's pin polarity from these flags */
+		interrupt-parent = <&gpio3>;
+		interrupts = <31 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "host-wake";
 	};
 };
 
