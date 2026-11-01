@@ -1,0 +1,38 @@
+[   85.541199] PM: suspend entry (shallow)
+[   85.542219] Filesystems sync: 0.000 seconds
+[   85.576668] Freezing user space processes
+[   85.577989] Freezing user space processes completed (elapsed 0.001 seconds)
+[   85.578024] OOM killer disabled.
+[   85.578034] Freezing remaining freezable tasks
+[   85.579314] Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+[   85.614085] GFP mask restricted
+[   86.142752] PM: suspend of devices complete after 525.450 msecs
+[   86.148785] PM: start suspend of devices complete after 535.550 msecs
+[   86.155259] PM: suspend devices took 0.540 seconds
+[   86.161664] PM: late suspend of devices complete after 1.537 msecs
+[   86.169462] PM: noirq suspend of devices complete after 1.342 msecs
+[   86.175777] Checking wakeup interrupts
+[   86.179542] Calling sched_clock_syscore_suspend+0x0/0x4
+[   86.184804] Calling timekeeping_syscore_suspend+0x0/0x4
+[   86.184804] Calling irq_gc_suspend+0x0/0x68
+[   86.184804] Calling fw_suspend+0x0/0x14
+[   86.184804] Calling mxc_gpio_syscore_suspend+0x0/0x60
+[   86.184804] Calling cpu_pm_suspend+0x0/0x18
+[   86.184804] Calling cpu_pm_resume+0x0/0x10
+[   86.184804] Calling mxc_gpio_syscore_resume+0x0/0x68
+[   86.184804] Calling irq_gc_resume+0x0/0x60
+[   86.184804] Calling irq_pm_syscore_resume+0x0/0x8
+[   86.184804] Calling timekeeping_syscore_resume+0x0/0x4
+[   86.184804] Calling sched_clock_syscore_resume+0x0/0x4
+[   86.184817] PM: Triggering wakeup from IRQ 241
+[   86.190565] PM: noirq resume of devices complete after 1.222 msecs
+[   86.198485] PM: early resume of devices complete after 1.289 msecs
+[   86.212309] Timekeeping suspended for 13.964 seconds
+[   86.246224] PM: resume of devices complete after 41.505 msecs
+[   86.252034] GFP mask restored
+[   86.256495] PM: resume devices took 0.060 seconds
+[   86.261379] OOM killer enabled.
+[   86.261394] Restarting tasks: Starting
+[   86.263921] Restarting tasks: Done
+[   86.263987] random: crng reseeded on system resumption
+[   86.307379] PM: suspend exit

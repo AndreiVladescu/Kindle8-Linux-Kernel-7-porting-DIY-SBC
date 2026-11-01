@@ -1,0 +1,38 @@
+[  210.830780] PM: suspend entry (deep)
+[  210.835615] Filesystems sync: 0.004 seconds
+[  210.859517] Freezing user space processes
+[  210.860848] Freezing user space processes completed (elapsed 0.001 seconds)
+[  210.860884] OOM killer disabled.
+[  210.860894] Freezing remaining freezable tasks
+[  210.881087] Freezing remaining freezable tasks completed (elapsed 0.020 seconds)
+[  210.901809] GFP mask restricted
+[  211.426931] PM: suspend of devices complete after 521.927 msecs
+[  211.432969] PM: start suspend of devices complete after 531.903 msecs
+[  211.439446] PM: suspend devices took 0.530 seconds
+[  211.445981] PM: late suspend of devices complete after 1.666 msecs
+[  211.453689] PM: noirq suspend of devices complete after 1.253 msecs
+[  211.460003] Checking wakeup interrupts
+[  211.463769] Calling sched_clock_syscore_suspend+0x0/0x4
+[  211.469030] Calling timekeeping_syscore_suspend+0x0/0x4
+[  211.469030] Calling irq_gc_suspend+0x0/0x68
+[  211.469030] Calling fw_suspend+0x0/0x14
+[  211.469030] Calling mxc_gpio_syscore_suspend+0x0/0x60
+[  211.469030] Calling cpu_pm_suspend+0x0/0x18
+[  211.469030] Calling cpu_pm_resume+0x0/0x10
+[  211.469030] Calling mxc_gpio_syscore_resume+0x0/0x68
+[  211.469030] Calling irq_gc_resume+0x0/0x60
+[  211.469030] Calling irq_pm_syscore_resume+0x0/0x8
+[  211.469030] Calling timekeeping_syscore_resume+0x0/0x4
+[  211.469030] Calling sched_clock_syscore_resume+0x0/0x4
+[  211.469045] PM: Triggering wakeup from IRQ 241
+[  211.474976] PM: noirq resume of devices complete after 1.401 msecs
+[  211.483025] PM: early resume of devices complete after 1.436 msecs
+[  211.496885] Timekeeping suspended for 14.699 seconds
+[  211.530607] PM: resume of devices complete after 41.347 msecs
+[  211.536416] GFP mask restored
+[  211.540960] PM: resume devices took 0.060 seconds
+[  211.545846] OOM killer enabled.
+[  211.545860] Restarting tasks: Starting
+[  211.549085] Restarting tasks: Done
+[  211.549153] random: crng reseeded on system resumption
+[  211.592655] PM: suspend exit

@@ -309,9 +309,9 @@
 	status = "okay";
 
 	/*
-	 * ROHM BD71815 PMIC. Stage 1: core, RTC, GPO, 32k clock, charger/fuel gauge.
-	 * The regulators node is intentionally EMPTY: without constraints the regulator core
-	 * registers the outputs read-only and never changes or disables them (DDR/ARM/SOC supplies!).
+	 * ROHM BD71815 PMIC: core, RTC, GPO, 32k clock, charger/fuel gauge, regulators.
+	 * Only buck2 and LDO5 are described, both pinned to their boot voltage and always-on; every
+	 * other output stays unconstrained, so the regulator core never changes or disables it.
 	 */
 	pmic: pmic@4b {
 		compatible = "rohm,bd71815";
@@ -329,7 +329,22 @@
 		#gpio-cells = <2>;
 
 		regulators {
-			/* Only LDO5 is described: logic supply of the e-paper path ("ldo5-disp" in
+			/*
+			 * buck2 feeds VDD_ARM_IN (the SoC's internal ARM LDO). Its OTP default switches it off
+			 * in the PMIC SUSPEND state; on wake the i.MX (BYPASS_PMIC_READY) powers the ARM core
+			 * up before buck2 is back, so deep suspend never resumed. Keep it on in SUSPEND at the
+			 * run voltage (sets SUSP_ON in BUCK2_MODE and BUCK2_VOLT_L). Voltage unchanged: 1.3 V.
+			 */
+			buck2_reg: buck2 {
+				regulator-name = "buck2-vddarm-in";
+				regulator-min-microvolt = <1300000>;
+				regulator-max-microvolt = <1300000>;
+				regulator-always-on;
+				regulator-boot-on;
+				rohm,dvs-suspend-voltage = <1300000>;
+			};
+
+			/* LDO5: logic supply of the e-paper path ("ldo5-disp" in
 			 * the vendor driver). Pinned to the 1.8 V U-Boot leaves and never switched off. */
 			ldo5_reg: ldo5 {
 				regulator-name = "ldo5-disp";

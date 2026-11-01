@@ -518,6 +518,20 @@ every run are hashed and compared with the same computation on a PC. They matche
 Purely compute-bound code scales with the clock (`stress-ng` int64: +26 % from 792 to 996 MHz). Code that
 mostly waits on memory gains less, because DRAM speed does not change (matrix multiply: +7.5 %).
 
+## Deep suspend
+
+Deep suspend (`mem`) went down cleanly but never came back; the last console line was `Calling
+cpu_pm_suspend`. `pm_test=devices` and `pm_test=core` passed, and so did `standby`, which wakes on the same SNVS
+RTC alarm. So the drivers and the wake path were fine, and the problem was in the power-off part of deep mode.
+
+There the i.MX asserts `PMIC_STBY_REQ`, and the BD71815 switches to its SUSPEND state, where every output has
+its own enable bit. Reading them showed **buck2, which feeds VDD_ARM_IN, switched off in SUSPEND**
+(`BUCK2_MODE` = 0x04). On wake, the i.MX6SL (`CLPCR.BYPASS_PMIC_READY`) powers the ARM core up after a fixed
+delay without waiting for the PMIC, so the core starts without a supply. Setting the SUSP_ON bit by hand
+(`i2cset -f -y 0 0x4b 0x03 0x05`) made deep suspend resume. The permanent fix is a `buck2` node in the DTS with
+`rohm,dvs-suspend-voltage = <1300000>`, which makes the regulator driver keep buck2 on in SUSPEND at its run
+voltage. Details in `docs/suspend.md`.
+
 ---
 
 ## Current state
@@ -542,9 +556,8 @@ web server all running.*
 ## Open items
 
 - The battery OCV table needs calibration from a full discharge (logger and table builder are in place, see `docs/battery.md`).
-- Suspend: drivers and everything up to the final sleep pass `pm_test` (`devices`, `core`), but real
-  deep suspend (`mem`) never wakes: it stops after `cpu_pm_suspend`, where the SoC asserts `PMIC_STBY_REQ`.
-  The BD71815 suspend-state configuration is the likely cause. `standby` and `s2idle` are untested.
+- Suspend works (deep and standby, timed wake via the SNVS RTC). Wake from the power button and lower
+  suspend voltages are not done yet, see `docs/suspend.md`.
 
 ## Reproducing
 
