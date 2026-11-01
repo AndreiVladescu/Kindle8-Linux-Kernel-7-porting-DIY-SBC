@@ -70,7 +70,7 @@ PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <style>body{{font:15px/1.5 system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#222;background:#f6f6f6}}
 h1{{font-size:1.4rem;margin:0 0 .2rem}}p{{color:#666;margin:0 0 1rem}}table{{border-collapse:collapse;width:100%}}
 td{{padding:.35rem .5rem;border-bottom:1px solid #ddd}}td:first-child{{color:#666;width:40%}}
-@media(prefers-color-scheme:dark){{body{{background:#161a20;color:#dbe1e8}}td{{border-color:#2b323c}}p,td:first-child{{color:#98a2ad}}}}</style>
+a{{color:#0f79d0}}@media(prefers-color-scheme:dark){{body{{background:#161a20;color:#dbe1e8}}a{{color:#6ab0f3}}td{{border-color:#2b323c}}p,td:first-child{{color:#98a2ad}}}}</style>
 </head><body><h1>{hostname}</h1><p>Kindle 8 SBC &middot; {time}</p><table>{rows}</table>
 <p style="margin-top:1rem"><a href="/status.json">status.json</a></p></body></html>"""
 

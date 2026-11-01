@@ -387,6 +387,25 @@ and NetworkManager reactivates the profile. Retries back off exponentially
 up to 30 minutes. In a test with the PC side taken down by hand, the link
 came back in 59 seconds.
 
+## A small web server
+
+With Python from `apk`, a short standard-library script serves a status page
+on port 80: kernel, uptime, load, memory, disk, SoC temperature, battery and
+WiFi signal, refreshed every 10 seconds. The same data is at `/status.json`,
+and any other path serves files from `/srv/www`. It runs under OpenRC as the
+unprivileged user `www`; the only capability it gets is
+`CAP_NET_BIND_SERVICE`, so it can bind port 80 without root. Details are in
+[`docs/web-server.md`](./docs/web-server.md).
+
+<img src="./img/web.png" width="100%" alt="The Kindle's status page in a browser: kernel 7.3.1, uptime, load, memory, disk, SoC temperature 36.1 °C, battery 90 % discharging, WiFi -41 dBm">
+
+*The status page at `http://kindle8.local/`, running on battery a minute
+after boot.*
+
+The SoC temperature comes from the thermal zone of type `imx_thermal_zone`.
+Zone 0 is the battery's, and it reads ten times too low because of the
+BD71815 temperature unit issue described above.
+
 ---
 
 ## Current state
