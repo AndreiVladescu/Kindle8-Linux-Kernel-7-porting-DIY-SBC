@@ -61,3 +61,40 @@ is still untested.
    `mxc_epdc_fb.ko`, and draw with `/usr/sbin/eips`. Answers "does the panel still work".
 2. **Mainline display**: FP9928 regulator driver (fp9931-derived, correct register map), GPIO mapping (from Amazon's
    GPL kernel source for 5.16.2.1.1 — board file), Kemnade's EPDC DRM driver, waveform conversion. Multi-day.
+
+## Phase 2–3 prep (state when paused, 2026-11-01)
+**EPDC driver source:** Kemnade's maintained DRM driver, branch `kobo/epdc-drm-6.8` (2024-05-01) of
+github.com/akemnade/linux: `drivers/gpu/drm/mxc-epdc/` (2 912 lines) + binding `fsl,mxc-epdc.yaml`.
+Sparse copy in `build/kemnade/drm/` (gitignored). Needs porting to 7.3 (e.g. `DRM_KMS_CMA_HELPER` → GEM DMA helpers).
+(`kobo/epdc-v6.8` is the older Freescale fbdev port, not used.)
+
+**Panel timing for the DT** (Amazon `mxc_epdc_fb.c`, `eanab_mode` + `panel_modes[]`, material V220):
+```
+epdc: epdc@20f4000 {
+	compatible = "fsl,imx6sl-epdc";
+	V3P3-supply = <&ldo5>;  VCOM-supply = <&epd_vcom>;  DISPLAY-supply = <&epd_vposneg>;
+	epd-thermal-zone = "epd-thermal";
+	vscan-holdoff = <4>; sdoed-width = <10>; sdoed-delay = <20>; sdoez-width = <10>; sdoez-delay = <20>;
+	gdclk-hp-offs = <392>; gdsp-offs = <297>; gdoe-offs = <0>; gdclk-offs = <51>; num-ce = <1>;
+	timing {
+		clock-frequency = <25263158>;	/* stock "pixclock" field, used as Hz by the stock EPDC driver — verify */
+		hactive = <800>; hback-porch = <20>; hfront-porch = <57>; hsync-len = <12>;
+		vactive = <600>; vback-porch = <4>; vfront-porch = <3>; vsync-len = <1>;
+	};
+};
+```
+
+**FP9928 driver plan** (`drivers/regulator/fp9928.c`, new; FP9931 driver is NOT register-compatible):
+- `enable-gpios` = PM_EPD_EN `&gpio3 25` → regulator `vposneg` (DISPLAY); after EN: ~1–2 ms, then rewrite VCOM (chip state is lost while EN is low)
+- `vcom-enable-gpios` = PM_EPD_ENOP `&gpio3 27` → regulator `vcom` (VCOM), only while EN is on;
+  voltage reg 0x02, µV = 64 000 + 21 000 × sel; constrain to 2 860 000 µV (sel 133) for this panel
+- `vin-supply` = BD71815 LDO5 (needs a constrained `ldo5` node, always-on)
+- hwmon temperature from reg 0x00 (signed °C); if off, pulse EN like stock `get_display_temp()`; thermal zone
+  "epd-thermal" with polling off
+- Do NOT write regs 0x01/0x03 (VPOS/VNEG meaning unknown on FP9928)
+
+**Waveform:** first test with stock `lib/firmware/imx/epdc_builtin.fw.gz` → `/lib/firmware/imx/epdc/epdc.fw`;
+later convert `V220_C295_BDCE01_ED060SCSC1_TC.wrf` (port the conversion from Amazon's driver).
+
+**Remaining steps:** write fp9928.c + DT (test via `tools/test-kernel.sh`, serial needed), port mxc-epdc to 7.3,
+CMA for the EPDC (`cma=` / CONFIG_CMA), first image.
