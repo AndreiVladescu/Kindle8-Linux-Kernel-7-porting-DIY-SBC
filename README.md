@@ -5,7 +5,7 @@ panel, converted into a headless Alpine Linux machine running a mainline
 Linux 7.3.1 kernel: WiFi, Bluetooth, USB Ethernet, battery-backed RTC and
 battery readings, with stock U-Boot left unmodified.
 
-Write-up: <https://andreivladescu.github.io/kindle8-linux-kernel-7-SBC/>
+Write-up: <https://andreivladescu.github.io/Kindle8-Linux-Kernel-7-porting-DIY-SBC>
 
 ## Repository layout
 

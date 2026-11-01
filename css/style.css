@@ -122,3 +122,18 @@ html[data-theme="light"]{
 /* ── Captions and diagrams ────────────────────────────────────────────── */
 #main_content p > em:only-child{ color: var(--text-muted); font-size: .92em; }
 #main_content img.diagram{ box-shadow: none !important; border: none !important; }
+
+/* ── Header photo ─────────────────────────────────────────────────────────
+   The slate theme's title band (#header_wrap) gets the board photo as a
+   background, darkened with a gradient so the white title stays readable.
+   Same in dark and light mode (the theme's header is always dark).
+   ────────────────────────────────────────────────────────────────────── */
+#header_wrap{
+  background:
+    linear-gradient(rgba(10,12,16,.62), rgba(10,12,16,.82)),
+    url("../img/esp32_bit_pirate_dock_re.jpeg") center 45% / cover no-repeat !important;
+}
+#header_wrap #project_title,
+#header_wrap #project_tagline{
+  text-shadow: 0 2px 8px rgba(0,0,0,.75);
+}
