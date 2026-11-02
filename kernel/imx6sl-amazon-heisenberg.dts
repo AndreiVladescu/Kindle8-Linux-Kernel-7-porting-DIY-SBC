@@ -9,7 +9,7 @@
  *   uSDHC1 0x02190000 BCM43430/4343W WiFi SDIO, 4-bit
  *   UART3 0x02034000  4343W Bluetooth HCI (RX/TX/RTS/CTS)
  *   I2C1  @0x4b ROHM BD71815 PMIC (IRQ gpio4 20), @0x48 FP9928 EPD PMIC
- *   I2C2  @0x50 zForce2 IR touch
+ *   I2C2  @0x51 zForce IR touch (TI MSP430 + Neonode NN1101)
  * Stock gpio phandles are 0-based; mainline labels are 1-based (stock gpio1 == &gpio2).
  *
  * Pad values keep bit 22 (LVE, 1.8 V low-voltage enable) exactly as the vendor DT set it.
@@ -184,6 +184,21 @@
 	pinctrl_hall: hallgrp {
 		fsl,pins = <
 			MX6SL_PAD_FEC_TXD1__GPIO4_IO16              0x4100b0	/* hall sensor (cover), Amazon DTS value */
+		>;
+	};
+
+	pinctrl_i2c2: i2c2grp {
+		fsl,pins = <
+			MX6SL_PAD_I2C2_SCL__I2C2_SCL                0x400108a8	/* Amazon DTS value */
+			MX6SL_PAD_I2C2_SDA__I2C2_SDA                0x400108a8
+		>;
+	};
+
+	pinctrl_touch: touchgrp {
+		fsl,pins = <
+			MX6SL_PAD_KEY_ROW5__GPIO4_IO03              0x100b0	/* TOUCH_INTB, Amazon DTS value */
+			MX6SL_PAD_KEY_ROW6__GPIO4_IO05              0x108b0	/* TOUCH_RST, open drain */
+			MX6SL_PAD_KEY_COL0__GPIO3_IO24              0x100b0	/* MSP430 TEST (BSL entry), left as input */
 		>;
 	};
 
@@ -367,6 +382,16 @@
 				rohm,dvs-suspend-voltage = <1300000>;
 			};
 
+			/* LDO4: touch controller supply (vendor zforce2 driver: "ldo4", 3.2 V). On at boot;
+			 * kept always-on until it is known whether anything else hangs off it. */
+			ldo4_reg: ldo4 {
+				regulator-name = "ldo4-touch";
+				regulator-min-microvolt = <3200000>;
+				regulator-max-microvolt = <3200000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
 			/* LDO5: logic supply of the e-paper path ("ldo5-disp" in
 			 * the vendor driver). Pinned to the 1.8 V U-Boot leaves and never switched off. */
 			ldo5_reg: ldo5 {
@@ -407,6 +432,32 @@
 		};
 	};
 
+};
+
+/*
+ * zForce touch: TI MSP430 running Neonode firmware, driving the NN1101 optical front end.
+ * The stock kernel loads zforce2 with deviceType=1 (TI): I2C address 0x51 and the classic
+ * zForce command set (0xEE frames, same as mainline zforce_ts). Pins and supply from the
+ * Lab126 board file (mach-imx6sl.c) and zforce2.c.
+ */
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	clock-frequency = <375000>;	/* as stock */
+	status = "okay";
+
+	touchscreen@51 {
+		compatible = "neonode,zforce";
+		reg = <0x51>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touch>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&gpio4 5 GPIO_ACTIVE_LOW>;
+		vdd-supply = <&ldo4_reg>;
+		touchscreen-size-x = <600>;	/* vendor X_RESOLUTION/Y_RESOLUTION */
+		touchscreen-size-y = <800>;
+	};
 };
 
 &usdhc1 {
