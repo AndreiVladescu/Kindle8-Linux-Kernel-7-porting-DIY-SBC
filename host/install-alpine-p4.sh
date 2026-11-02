@@ -63,7 +63,7 @@ printf 'export PS1="\\h:\\w# "\n' > $MNT/root/.profile
 log "services"
 for s in devfs dmesg mdev; do chroot $MNT rc-update add $s sysinit >/dev/null; done
 for s in hostname bootmisc sysctl syslog networking; do chroot $MNT rc-update add $s boot >/dev/null; done
-for s in dropbear chronyd; do chroot $MNT rc-update add $s default >/dev/null; done
+for s in dropbear chronyd acpid; do chroot $MNT rc-update add $s default >/dev/null; done
 for s in killprocs mount-ro savecache; do chroot $MNT rc-update add $s shutdown >/dev/null; done
 
 sync

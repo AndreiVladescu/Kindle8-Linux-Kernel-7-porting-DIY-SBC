@@ -1,0 +1,54 @@
+BD71815 power-off: restore the BUCK1/BUCK2 voltage registers, stop the coulomb counter, then PWRCTRL 0x22 -> 0x23, as the vendor bd7181x_chip_poweroff() does. Registered when the node has system-power-controller.
+
+--- a/drivers/mfd/rohm-bd71828.c
++++ b/drivers/mfd/rohm-bd71828.c
+@@ -880,6 +880,34 @@
+ 	}
+ }
+ 
++/*
++ * BD71815 power-off, as the vendor BD7181x driver (Amazon Kindle) does it in
++ * bd7181x_chip_poweroff(): restore the reset values of the BUCK1/BUCK2 voltage
++ * registers so the next power-up starts from them, stop the coulomb counter,
++ * then write PWRCTRL 0x22 followed by 0x23. The PMIC then switches all rails off
++ * and powers up again on the power button (or on charger insertion).
++ */
++static void bd71815_power_off(void)
++{
++	static const u8 seq[][2] = {
++		{ BD71815_REG_BUCK1_VOLT_H, 0xd4 },
++		{ BD71815_REG_BUCK1_VOLT_L, 0x14 },
++		{ BD71815_REG_BUCK2_VOLT_H, 0x94 },
++		{ BD71815_REG_BUCK2_VOLT_L, 0x14 },
++		{ BD71815_REG_CC_CTRL, 0x00 },
++		{ BD71815_REG_PWRCTRL, 0x22 },
++		{ BD71815_REG_PWRCTRL, 0x23 },
++	};
++	int i;
++
++	/* We are not allowed to sleep, so do not use regmap involving mutexes here. */
++	for (i = 0; i < ARRAY_SIZE(seq); i++)
++		i2c_smbus_write_byte_data(bd71828_dev, seq[i][0], seq[i][1]);
++
++	mdelay(1000);
++	dev_err(&bd71828_dev->dev, "power-off failed\n");
++}
++
+ static void bd71828_remove_poweroff(void *data)
+ {
+ 	pm_power_off = NULL;
+@@ -1029,10 +1057,12 @@
+ 	}
+ 
+ 	if (of_device_is_system_power_controller(i2c->dev.of_node) &&
+-	    chip_type == ROHM_CHIP_TYPE_BD71828) {
++	    (chip_type == ROHM_CHIP_TYPE_BD71828 ||
++	     chip_type == ROHM_CHIP_TYPE_BD71815)) {
+ 		if (!pm_power_off) {
+ 			bd71828_dev = i2c;
+-			pm_power_off = bd71828_power_off;
++			pm_power_off = chip_type == ROHM_CHIP_TYPE_BD71815 ?
++				       bd71815_power_off : bd71828_power_off;
+ 			ret = devm_add_action_or_reset(&i2c->dev,
+ 						       bd71828_remove_poweroff,
+ 						       NULL);
