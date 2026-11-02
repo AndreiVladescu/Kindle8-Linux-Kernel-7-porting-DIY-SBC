@@ -43,4 +43,7 @@ Raspberry Pi.
   back on the same address, `STATUS.TXT` written, template restored.
 - Drive with an unparsable file: `STATUS.TXT` explains, template restored. The drive is kept ejected for 6 s:
   with 1 s the PC (2 s media poll) kept a stale FAT mount; with 6 s udisks unmounts and remounts fresh.
-- Setup access point with a phone: pending.
+- Setup access point with a phone (`wifi-setup start` over USB): AP on channel 1, 8 networks scanned. The phone
+  associated (WPA2 handshake), got 192.168.4.14 from dnsmasq, the form was sent and the Kindle was back on the
+  home network 12 s later; the new `wpa_supplicant.conf` has only the hashed PSK. Fixed afterwards: the `.bak`
+  of the previous file (which can hold a plain-text passphrase) is deleted after a successful change.

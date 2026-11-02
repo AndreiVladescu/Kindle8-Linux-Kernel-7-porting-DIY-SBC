@@ -337,6 +337,10 @@ def apply(ssid, psk, source):
     if wait_connected(CONNECT_TIMEOUT):
         ip = ipv4()
         log(f"connected, {ip}")
+        try:                                         # the old file may hold a plain-text passphrase
+            os.remove(WPA_CONF + ".bak")
+        except OSError:
+            pass
         save_state(mode="normal", error=None, connected_to=ssid, connecting_to=None)
         eink(f"Connected to\n{ssid}\n\nIP {ip}", title="WiFi", dur="3m")
         return True, f"Connected to {ssid}, IP {ip}."
