@@ -392,7 +392,7 @@ def usb_finish(status_text):
     sh("mcopy", "-o", "-i", IMG, f"{RUN}/STATUS.TXT", "::/STATUS.TXT", env=MENV)
     os.remove(f"{RUN}/STATUS.TXT")
     if attached:
-        time.sleep(1)
+        time.sleep(6)                                # > the PC's 2 s media poll: it unmounts, then remounts fresh
         try:
             with open(f"{LUN}/file", "w") as f:
                 f.write(IMG)

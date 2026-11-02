@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""Last image on the e-ink panel when the Kindle shuts down (the panel keeps it without power).
+
+  eink-shutdown-screen poweroff      face with X eyes and the tongue out, "Powered off", time
+  eink-shutdown-screen reboot        "Restarting"
+  eink-shutdown-screen --preview out.png poweroff
+
+Called by the kindle-eink service when OpenRC stops it for shutdown/reboot (not on a plain restart).
+Uses a clean black/white refresh so the image stays crisp for as long as the board is off.
+"""
+import sys
+import time
+
+sys.path.insert(0, "/usr/local/lib/kindle-eink")
+from PIL import Image, ImageDraw  # noqa: E402
+import einklib as E  # noqa: E402
+
+
+def dead_face(d, cx, cy, r):
+    w = max(r // 17, 6)
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=0, width=w)
+    # X eyes
+    for ex in (cx - r * 0.4, cx + r * 0.4):
+        ey, s = cy - r * 0.28, r * 0.2
+        d.line((ex - s, ey - s, ex + s, ey + s), fill=0, width=w + 2)
+        d.line((ex - s, ey + s, ex + s, ey - s), fill=0, width=w + 2)
+    # flat mouth
+    my = cy + r * 0.38
+    d.line((cx - r * 0.5, my, cx + r * 0.5, my), fill=0, width=w)
+    # tongue hanging out on the right, grey with a centre groove
+    tx0, tx1 = cx + r * 0.02, cx + r * 0.38
+    ty1 = my + r * 0.48
+    d.rounded_rectangle((tx0, my - w / 2, tx1, ty1), radius=(tx1 - tx0) / 2, fill=170, outline=0, width=w - 2)
+    d.line((cx - r * 0.5, my, cx + r * 0.5, my), fill=0, width=w)       # mouth over the tongue's top edge
+    gx = (tx0 + tx1) / 2
+    d.line((gx, my + r * 0.08, gx, ty1 - r * 0.16), fill=60, width=max(w // 2, 3))
+
+
+def poweroff_image():
+    img = Image.new("L", (E.W, E.H), 255)
+    d = ImageDraw.Draw(img)
+    top, bottom = E.regions()[0]                     # face in the band above the damaged rows
+    r = min((bottom - top) // 2 - 20, (E.W - E.MARGIN_L - E.MARGIN_R) // 2 - 10)
+    cx = E.MARGIN_L + (E.W - E.MARGIN_L - E.MARGIN_R) // 2
+    dead_face(d, cx, (top + bottom) // 2, r)
+
+    y = E.SKIP[1] + 20 if E.SKIP[1] + 200 < E.H else bottom - 120
+    for text, fnt, fill, gap in (("Powered off", E.font(E.SANS_BOLD, 58), 0, 78),
+                                 (time.strftime("%a %d %b, %H:%M"), E.font(E.SANS, 30), 60, 50),
+                                 ("Hold the power button to start", E.font(E.SANS, 24), 100, 0)):
+        tw = d.textlength(text, font=fnt)
+        d.text((cx - tw / 2, y), text, font=fnt, fill=fill)
+        y += gap
+    return img
+
+
+def reboot_image():
+    return E.render_text("Restarting\n" + time.strftime("%H:%M"), center=True)
+
+
+def main(argv):
+    preview = None
+    if len(argv) > 1 and argv[0] == "--preview":
+        preview, argv = argv[1], argv[2:]
+    what = argv[0] if argv else "poweroff"
+    img = reboot_image() if what == "reboot" else poweroff_image()
+    if preview:
+        img.save(preview)
+        return 0
+    panel = E.Panel()
+    panel.flash(img, pause=1.0)
+    time.sleep(2.5)                                  # let the last update finish before power goes
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

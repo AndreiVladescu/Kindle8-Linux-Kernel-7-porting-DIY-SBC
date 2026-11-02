@@ -34,3 +34,13 @@ Raspberry Pi.
   key (PBKDF2, checked against the IEEE 802.11i test vector); the passphrase is not stored. The client gets 45 s.
   On failure the previous file is restored: from setup mode the access point returns with the error, from
   normal mode the Kindle reconnects to the previous network. The panel shows the result.
+
+## Tests (2026-11-02, kernel #19)
+- USB: composite enumerates as 1d6b:0104 "kindle8"; NetworkManager activates `kindle8-usb` on enx024b38000001
+  as before; the PC automounts KINDLE8. A cable plugged in after boot was not noticed once (VBUS present, UDC
+  "not attached") until a soft reconnect; `usb-link-watchdog` now does that after 40 s / 200 s in that state.
+- Drive with a made-up network: applied 8 s after saving, failed after ~70 s, previous config restored and WiFi
+  back on the same address, `STATUS.TXT` written, template restored.
+- Drive with an unparsable file: `STATUS.TXT` explains, template restored. The drive is kept ejected for 6 s:
+  with 1 s the PC (2 s media poll) kept a stale FAT mount; with 6 s udisks unmounts and remounts fresh.
+- Setup access point with a phone: pending.

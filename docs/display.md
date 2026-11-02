@@ -133,3 +133,11 @@ every 5 minutes (`EINK_INTERVAL`).
 - `eink-say`: text layout over the usable bands (top 24..487, bottom 603..754, footer below), auto-fit from 160 px
   down in 8 % steps; short texts stay in the top band if that costs < 30 % size; `--mono` fits the longest line
   without wrapping first. `--preview out.png` renders without touching the panel.
+
+## Shutdown screen (2026-11-02)
+`eink-shutdown-screen` (called from `kindle-eink` `stop_post` when `RC_RUNLEVEL` is shutdown/reboot) leaves a face
+with X eyes and the tongue out, "Powered off", the time and "Hold the power button to start", with a clean
+black/white refresh, then waits 2.5 s for the update to finish. busybox init runs the same OpenRC `shutdown`
+runlevel for poweroff and reboot, so a reboot shows it too until the status page returns.
+Auto-fit fix: a font size that would split a word is rejected (`WordTooLong`), so words are never broken
+unless a single word is wider than the panel at 14 px.

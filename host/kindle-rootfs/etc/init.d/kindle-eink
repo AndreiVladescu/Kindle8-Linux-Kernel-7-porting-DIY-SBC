@@ -27,3 +27,14 @@ start_pre() {
 	mkdir -p /var/lib/kindle-eink
 	return 0
 }
+
+stop_post() {
+	# system going down (poweroff or reboot: busybox init runs the same "shutdown" runlevel for both):
+	# leave a "powered off" face on the panel, which keeps the image without power. Not on a plain restart.
+	case "$RC_RUNLEVEL" in
+		shutdown|reboot)
+			[ -e /dev/fb0 ] && /usr/bin/python3 /usr/local/bin/eink-shutdown-screen poweroff
+			;;
+	esac
+	return 0
+}

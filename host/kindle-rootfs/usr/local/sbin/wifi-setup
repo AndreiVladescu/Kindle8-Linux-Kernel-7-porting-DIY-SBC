@@ -4,7 +4,7 @@
 #   stop    close it and retry the stored network
 #   status  current mode, as seen by the setup web page
 pid=$(for p in /proc/[0-9]*; do
-	tr '\0' ' ' < $p/cmdline 2>/dev/null | grep -q '^/usr/bin/python3 /usr/local/sbin/wifi-setupd' && echo ${p#/proc/}
+	tr '\0' ' ' 2>/dev/null < $p/cmdline | grep -q '^/usr/bin/python3 /usr/local/sbin/wifi-setupd' && echo ${p#/proc/}
 done | head -1)
 case "${1:-status}" in
 	start)  [ -n "$pid" ] || { echo "wifi-setupd is not running (rc-service wifi-setup start)"; exit 1; }

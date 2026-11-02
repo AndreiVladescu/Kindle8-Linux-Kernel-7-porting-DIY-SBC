@@ -112,8 +112,13 @@ def regions(top=24, bottom=H - 46):
     return [r for r in out if r[1] > r[0]]
 
 
-def wrap(draw, text, fnt, width):
-    """Word-wrap text to width px; keeps explicit line breaks, breaks over-long words."""
+class WordTooLong(Exception):
+    pass
+
+
+def wrap(draw, text, fnt, width, strict=False):
+    """Word-wrap text to width px; keeps explicit line breaks. Over-long words are broken,
+    or with strict=True raise WordTooLong (auto-fit then tries a smaller font)."""
     lines = []
     for para in text.split("\n"):
         words, cur = para.split(" "), ""
@@ -124,6 +129,8 @@ def wrap(draw, text, fnt, width):
                 continue
             if cur:
                 lines.append(cur)
+            if strict and draw.textlength(w, font=fnt) > width:
+                raise WordTooLong(w)
             while draw.textlength(w, font=fnt) > width:      # hard-break a long word
                 i = len(w)
                 while i > 1 and draw.textlength(w[:i], font=fnt) > width:
@@ -160,11 +167,17 @@ def render_text(text, title=None, size=None, mono=False, center=False, footer=No
     regs = regions()
     body_face = MONO if mono else SANS
 
-    def attempt(sz, regs, nowrap):
+    def attempt(sz, regs, nowrap, strict=True):
+        try:
+            return _attempt(sz, regs, nowrap, strict and sz > 14)
+        except WordTooLong:
+            return None
+
+    def _attempt(sz, regs, nowrap, strict):
         items = []
         if title:
             tf = font(SANS_BOLD, max(int(sz * 1.2), 16))
-            items.append((wrap(d, title, tf, width), tf, int(tf.size * 1.25)))
+            items.append((wrap(d, title, tf, width, strict), tf, int(tf.size * 1.25)))
             items.append(([""], tf, int(sz * 0.5)))           # gap under the title
         bf = font(body_face, sz)
         if nowrap:                                           # keep lines intact (tables, command output)
@@ -172,7 +185,7 @@ def render_text(text, title=None, size=None, mono=False, center=False, footer=No
             if any(d.textlength(ln, font=bf) > width for ln in lines):
                 return None
         else:
-            lines = wrap(d, text, bf, width)
+            lines = wrap(d, text, bf, width, strict)
         items.append((lines, bf, int(sz * 1.22)))
         return layout(d, items, regs)
 
@@ -186,7 +199,7 @@ def render_text(text, title=None, size=None, mono=False, center=False, footer=No
         return 0, None
 
     if size:
-        placed = attempt(size, regs, False)
+        placed = attempt(size, regs, False, strict=False)
         if placed is None:
             raise ValueError(f"text does not fit at size {size}; omit --size to auto-fit")
     else:

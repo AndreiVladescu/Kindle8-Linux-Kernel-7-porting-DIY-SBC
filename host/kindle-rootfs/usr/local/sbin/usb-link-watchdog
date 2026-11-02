@@ -3,16 +3,31 @@
 # "configured" but the host never ARPs back). ARP-probe the PC; after 3 misses while a host is attached,
 # soft-disconnect/reconnect the UDC so the PC re-enumerates and NetworkManager re-activates "kindle8-usb".
 # Exponential backoff (60 s .. 30 min) so a PC that is simply off/asleep isn't hammered.
+# Also: with the configfs gadget a cable plugged in after boot is sometimes not noticed (VBUS present,
+# UDC "not attached"); reconnect once after 40 s and once after 200 s of that state.
 UDC=/sys/class/udc/ci_hdrc.0
+AC=/sys/class/power_supply/bd71828_ac/online
 PEER=192.168.7.1
 IF=usb0
-fail=0; backoff=60
+fail=0; backoff=60; na=0
 log() { logger -t usb-link-watchdog "$*"; }
 while sleep 20; do
 	state=$(cat $UDC/state 2>/dev/null)
 	case "$state" in
-		""|"not attached") fail=0; backoff=60; continue ;;   # no cable / no host: nothing to fix
+		""|"not attached")
+			fail=0; backoff=60
+			if [ "$(cat $AC 2>/dev/null)" = 1 ] && [ -n "$state" ]; then
+				na=$((na + 1))
+				if [ $na -eq 2 ] || [ $na -eq 10 ]; then
+					log "VBUS present but gadget not attached -> soft reconnect"
+					echo disconnect > $UDC/soft_connect; sleep 2; echo connect > $UDC/soft_connect
+				fi
+			else
+				na=0
+			fi
+			continue ;;
 	esac
+	na=0
 	if arping -q -c 1 -w 2 -I $IF $PEER; then
 		[ $backoff -ne 60 ] && log "link back"
 		fail=0; backoff=60; continue
