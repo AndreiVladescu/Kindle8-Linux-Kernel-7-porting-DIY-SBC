@@ -1,0 +1,26 @@
+#!/sbin/openrc-run
+description="WiFi setup wizard: access point + web/USB configuration when there is no WiFi"
+command=/usr/bin/python3
+command_args="/usr/local/sbin/wifi-setupd"
+supervisor=supervise-daemon
+output_logger="logger -t wifi-setup"
+error_logger="logger -t wifi-setup"
+
+depend() {
+	need networking
+	after wpa_supplicant usb-gadget kindle-web kindle-eink
+}
+
+stop_post() {
+	# do not leave the access point behind
+	local ap=0
+	for f in /run/wifi-setup/dnsmasq.pid /run/wifi-setup/hostapd.pid; do
+		[ -f "$f" ] && { kill "$(cat "$f")" 2>/dev/null; ap=1; }; rm -f "$f"
+	done
+	if [ $ap = 1 ]; then		# back to the WiFi client
+		ip addr flush dev wlan0
+		rc-service wpa_supplicant start >/dev/null 2>&1
+		ifdown -f wlan0 >/dev/null 2>&1; ifup wlan0 >/dev/null 2>&1
+	fi
+	return 0
+}

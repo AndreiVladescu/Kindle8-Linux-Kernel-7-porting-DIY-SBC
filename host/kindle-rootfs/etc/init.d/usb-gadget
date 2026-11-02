@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+description="USB gadget: Ethernet (usb0) + KINDLE8 WiFi setup drive (configfs)"
+
+depend() {
+	before networking
+	after localmount
+}
+
+start() {
+	ebegin "Setting up USB gadget"
+	/usr/local/sbin/usb-gadget start >/dev/null
+	eend $?
+}
+
+stop() {
+	ebegin "Removing USB gadget"
+	/usr/local/sbin/usb-gadget stop >/dev/null
+	eend $?
+}

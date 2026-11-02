@@ -1,0 +1,563 @@
+#!/usr/bin/env python3
+"""WiFi setup wizard for the Kindle 8 SBC.
+
+normal mode   wlan0 is a client (wpa_supplicant + udhcpc from /etc/network/interfaces).
+setup mode    entered when there is no connection 90 s after boot, no configured network, or the
+              connection has been lost for 5 min. wlan0 becomes an access point "kindle8-setup"
+              (hostapd, WPA2, random password shown on the e-ink panel), dnsmasq hands out
+              192.168.4.x and answers every DNS name with 192.168.4.1 so phones open the setup page
+              (kindle-web /setup). Without any client for 15 min it retries the stored network.
+
+Requests come from
+  - kindle-web /setup  -> /run/wifi-setup/inbox/request.json  (kindle-web runs as "www")
+  - the USB drive KINDLE8 (usb-gadget): wpa_supplicant.conf in /var/lib/wifi-setup/usbdisk.img
+A request is applied by writing /etc/wpa_supplicant/wpa_supplicant.conf with the hashed PSK only
+(never the passphrase), restarting the client and waiting for an address. On failure the previous
+file is restored and setup mode returns with the error.
+
+State for the web page: /run/wifi-setup/state.json.  Signals: SIGUSR1 = enter setup mode now,
+SIGUSR2 = leave setup mode (retry the stored network).  CLI: wifi-setup start|stop|status.
+"""
+import binascii
+import hashlib
+import json
+import os
+import pwd
+import random
+import re
+import signal
+import subprocess
+import sys
+import time
+
+IFACE = "wlan0"
+RUN = "/run/wifi-setup"
+STATE = f"{RUN}/state.json"
+INBOX = f"{RUN}/inbox"
+WPA_CONF = "/etc/wpa_supplicant/wpa_supplicant.conf"
+IMG = "/var/lib/wifi-setup/usbdisk.img"
+TEMPLATE_DIR = "/usr/local/share/wifi-setup"
+LUN = "/sys/kernel/config/usb_gadget/kindle8/functions/mass_storage.0/lun.0"
+AP_SSID = os.environ.get("WIFI_SETUP_SSID", "kindle8-setup")
+AP_IP = "192.168.4.1"
+COUNTRY = os.environ.get("WIFI_SETUP_COUNTRY", "RO")
+BOOT_GRACE = int(os.environ.get("WIFI_SETUP_BOOT_GRACE", "90"))
+LOST_GRACE = int(os.environ.get("WIFI_SETUP_LOST_GRACE", "300"))
+IDLE_RETRY = int(os.environ.get("WIFI_SETUP_IDLE_RETRY", "900"))
+CONNECT_TIMEOUT = 45
+EINK_SAY = "/usr/local/bin/eink-say"
+
+want_setup = False
+want_leave = False
+
+
+def log(*a):
+    print(*a, flush=True)
+
+
+def sh(*cmd, check=False, timeout=30, **kw):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, check=check, timeout=timeout, **kw)
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        log("command failed:", cmd[0], repr(e))
+        return subprocess.CompletedProcess(cmd, 1, "", str(e))
+
+
+# ------------------------------------------------------------------ state for the web page
+
+state = {"mode": "starting", "ap_ssid": AP_SSID, "networks": [], "error": None, "connected_to": None}
+
+
+def save_state(**kw):
+    state.update(kw, updated=int(time.time()))
+    os.makedirs(RUN, exist_ok=True)
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(state, f)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, STATE)
+
+
+def setup_inbox():
+    os.makedirs(INBOX, exist_ok=True)
+    try:
+        www = pwd.getpwnam("www")
+        os.chown(INBOX, www.pw_uid, www.pw_gid)
+    except KeyError:
+        pass
+    os.chmod(INBOX, 0o700)
+
+
+# ------------------------------------------------------------------ client side
+
+def ipv4(iface=IFACE):
+    out = sh("ip", "-4", "-o", "addr", "show", "dev", iface).stdout
+    m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)/", out)
+    return m.group(1) if m else None
+
+
+def link_ssid():
+    out = sh("iw", "dev", IFACE, "link").stdout
+    if "Connected to" not in out:
+        return None
+    m = re.search(r"^\s*SSID: (.*)$", out, re.M)
+    return unescape(m.group(1)) if m else ""
+
+
+def connected():
+    ip = ipv4()
+    return bool(link_ssid() is not None and ip and ip != AP_IP)
+
+
+def configured_networks():
+    try:
+        return len(re.findall(r"^\s*network\s*=\s*\{", open(WPA_CONF).read(), re.M))
+    except OSError:
+        return 0
+
+
+def client_up():
+    sh("ip", "addr", "flush", "dev", IFACE)
+    sh("rc-service", "wpa_supplicant", "restart", timeout=40)
+    sh("ifdown", "-f", IFACE)
+    sh("ifup", IFACE, timeout=60)
+
+
+def client_down():
+    sh("ifdown", "-f", IFACE)
+    sh("rc-service", "wpa_supplicant", "stop", timeout=40)
+    sh("pkill", "-f", f"udhcpc.*{IFACE}")
+    sh("ip", "addr", "flush", "dev", IFACE)
+
+
+def wait_connected(timeout):
+    end = time.time() + timeout
+    while time.time() < end:
+        if connected():
+            return True
+        time.sleep(2)
+    return False
+
+
+# ------------------------------------------------------------------ scan
+
+def unescape(s):
+    """iw prints non-printable SSID bytes as \\xNN."""
+    try:
+        return re.sub(rb"\\x([0-9a-fA-F]{2})", lambda m: bytes([int(m.group(1), 16)]),
+                      s.encode("latin-1", "backslashreplace")).decode("utf-8", "replace")
+    except Exception:
+        return s
+
+
+def scan():
+    sh("ip", "link", "set", IFACE, "up")
+    out = ""
+    for _ in range(3):                               # "Device or resource busy" right after mode changes
+        r = sh("iw", "dev", IFACE, "scan", timeout=30)
+        if r.returncode == 0:
+            out = r.stdout
+            break
+        time.sleep(2)
+    nets = {}
+    for block in re.split(r"^BSS ", out, flags=re.M)[1:]:
+        m = re.search(r"^\s*SSID: (.*)$", block, re.M)
+        if not m or not m.group(1).strip():
+            continue                                 # hidden network
+        ssid = unescape(m.group(1))
+        sig = re.search(r"signal: (-?\d+\.\d+) dBm", block)
+        sig = float(sig.group(1)) if sig else -100.0
+        freq = re.search(r"freq: (\d+)", block)
+        secure = bool(re.search(r"^\s*(RSN|WPA):", block, re.M)) or "Privacy" in block
+        if ssid == AP_SSID:
+            continue
+        if ssid not in nets or sig > nets[ssid]["signal"]:
+            nets[ssid] = {"ssid": ssid, "signal": round(sig), "secure": secure,
+                          "freq": int(freq.group(1)) if freq else 0}
+    return sorted(nets.values(), key=lambda n: -n["signal"])
+
+
+def pick_channel(nets):
+    use = {1: 0, 6: 0, 11: 0}
+    for n in nets:
+        ch = (n["freq"] - 2407) // 5 if 2412 <= n["freq"] <= 2472 else None
+        for c in use:
+            if ch is not None and abs(ch - c) < 5:
+                use[c] += 1
+    return min(use, key=lambda c: (use[c], c != 6))
+
+
+# ------------------------------------------------------------------ access point
+
+AP_PASSWORD = None
+
+
+def ap_password():
+    global AP_PASSWORD
+    if not AP_PASSWORD:                              # no look-alike characters, readable on e-ink
+        alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+        AP_PASSWORD = "".join(random.SystemRandom().choice(alphabet) for _ in range(8))
+    return AP_PASSWORD
+
+
+def ap_up(nets):
+    ch = pick_channel(nets)
+    os.makedirs(RUN, exist_ok=True)
+    with open(f"{RUN}/hostapd.conf", "w") as f:
+        f.write(f"""interface={IFACE}
+driver=nl80211
+ssid={AP_SSID}
+country_code={COUNTRY}
+hw_mode=g
+channel={ch}
+ieee80211n=1
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+wpa_passphrase={ap_password()}
+""")
+    os.chmod(f"{RUN}/hostapd.conf", 0o600)
+    with open(f"{RUN}/dnsmasq.conf", "w") as f:
+        f.write(f"""interface={IFACE}
+bind-interfaces
+listen-address={AP_IP}
+no-resolv
+no-hosts
+address=/#/{AP_IP}
+dhcp-range=192.168.4.10,192.168.4.60,255.255.255.0,15m
+dhcp-option=3,{AP_IP}
+dhcp-option=6,{AP_IP}
+dhcp-option=114,http://{AP_IP}/setup
+dhcp-leasefile={RUN}/dnsmasq.leases
+""")
+    sh("ip", "addr", "flush", "dev", IFACE)
+    r = sh("hostapd", "-B", "-P", f"{RUN}/hostapd.pid", f"{RUN}/hostapd.conf", timeout=20)
+    if r.returncode != 0:
+        log("hostapd failed:", r.stdout[-400:], r.stderr[-400:])
+        return False
+    sh("ip", "addr", "add", f"{AP_IP}/24", "dev", IFACE)
+    sh("ip", "link", "set", IFACE, "up")
+    r = sh("dnsmasq", "-C", f"{RUN}/dnsmasq.conf", "-x", f"{RUN}/dnsmasq.pid")
+    if r.returncode != 0:
+        log("dnsmasq failed:", r.stderr[-400:])
+    log(f"access point {AP_SSID} up on channel {ch}")
+    return True
+
+
+def kill_pidfile(path):
+    try:
+        os.kill(int(open(path).read().strip()), signal.SIGTERM)
+    except (OSError, ValueError):
+        pass
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def ap_down():
+    kill_pidfile(f"{RUN}/dnsmasq.pid")
+    kill_pidfile(f"{RUN}/hostapd.pid")
+    time.sleep(1)
+    sh("ip", "addr", "flush", "dev", IFACE)
+
+
+def ap_clients():
+    return sh("iw", "dev", IFACE, "station", "dump").stdout.count("Station ")
+
+
+# ------------------------------------------------------------------ e-ink
+
+def eink(text, title=None, dur=None):
+    cmd = [EINK_SAY, "-c"]
+    if title:
+        cmd += ["-t", title]
+    if dur:
+        cmd += ["--for", dur]
+    sh(*cmd, text)
+
+
+def eink_setup_screen(error=None):
+    text = f"Join WiFi\n{AP_SSID}\npassword {ap_password()}\nthen open\nhttp://{AP_IP}\n"
+    text += "\nor plug in USB and edit\nwpa_supplicant.conf\non the KINDLE8 drive"
+    if error:
+        text = f"{error}\n\n" + text
+    eink(text, title="WiFi setup")
+
+
+# ------------------------------------------------------------------ applying a network
+
+def psk_hex(ssid, passphrase):
+    return hashlib.pbkdf2_hmac("sha1", passphrase.encode(), ssid.encode(), 4096, 32).hex()
+
+
+def validate(ssid, psk):
+    if not ssid or len(ssid.encode()) > 32:
+        return "The network name must be 1 to 32 bytes."
+    if psk and not (8 <= len(psk) <= 63 or re.fullmatch(r"[0-9a-fA-F]{64}", psk)):
+        return "The password must be 8 to 63 characters."
+    return None
+
+
+def write_wpa_conf(ssid, psk):
+    net = [f"\tssid={binascii.hexlify(ssid.encode()).decode()}"]
+    if psk:
+        key = psk.lower() if re.fullmatch(r"[0-9a-fA-F]{64}", psk) else psk_hex(ssid, psk)
+        net += [f"\tpsk={key}", "\tkey_mgmt=WPA-PSK"]
+    else:
+        net += ["\tkey_mgmt=NONE"]
+    body = (f"ctrl_interface=/var/run/wpa_supplicant\nupdate_config=0\ncountry={COUNTRY}\n\n"
+            f"# set by wifi-setupd {time.strftime('%Y-%m-%d %H:%M')}; ssid is hex-encoded, psk is the hashed key\n"
+            "network={\n" + "\n".join(net) + "\n}\n")
+    tmp = WPA_CONF + ".new"
+    with open(tmp, "w") as f:
+        f.write(body)
+    os.chmod(tmp, 0o600)
+    if os.path.exists(WPA_CONF):
+        os.replace(WPA_CONF, WPA_CONF + ".bak")
+    os.replace(tmp, WPA_CONF)
+
+
+def restore_wpa_conf():
+    if os.path.exists(WPA_CONF + ".bak"):
+        os.replace(WPA_CONF + ".bak", WPA_CONF)
+
+
+def apply(ssid, psk, source):
+    """Returns (ok, message). Leaves the client running on success, setup mode otherwise."""
+    err = validate(ssid, psk)
+    if err:
+        return False, err
+    log(f"applying network from {source} (ssid {len(ssid)} chars)")
+    save_state(mode="connecting", error=None, connecting_to=ssid)
+    eink(f"Connecting to\n{ssid}", title="WiFi setup")
+    ap_down()
+    write_wpa_conf(ssid, psk)
+    client_up()
+    if wait_connected(CONNECT_TIMEOUT):
+        ip = ipv4()
+        log(f"connected, {ip}")
+        save_state(mode="normal", error=None, connected_to=ssid, connecting_to=None)
+        eink(f"Connected to\n{ssid}\n\nIP {ip}", title="WiFi", dur="3m")
+        return True, f"Connected to {ssid}, IP {ip}."
+    log("connection failed, restoring the previous configuration")
+    restore_wpa_conf()
+    return False, f"Could not connect to {ssid} (wrong password or out of range)."
+
+
+# ------------------------------------------------------------------ USB drive (KINDLE8)
+
+TEMPLATE_CONF = os.path.join(TEMPLATE_DIR, "wpa_supplicant.conf")
+MENV = dict(os.environ, MTOOLS_SKIP_CHECK="1")
+
+
+def usb_read():
+    if not os.path.exists(IMG):
+        return None
+    r = sh("mtype", "-i", IMG, "::/wpa_supplicant.conf", env=MENV)
+    return r.stdout if r.returncode == 0 else None
+
+
+def parse_conf(text):
+    """First uncommented network block -> (ssid, psk); None if there is none."""
+    lines = [l.strip() for l in text.replace("\r", "").splitlines()]
+    body = "\n".join(l for l in lines if l and not l.startswith("#"))   # no inline-comment stripping:
+    m = re.search(r"network\s*=\s*\{(.*?)\n\s*\}", body + "\n", re.S)  # passwords may contain '#'
+    if not m:
+        return None
+    blk = m.group(1)
+    s = re.search(r'^\s*ssid\s*=\s*"(.*)"\s*$', blk, re.M)
+    if not s:
+        return None
+    p = (re.search(r'^\s*psk\s*=\s*"(.*)"\s*$', blk, re.M)
+         or re.search(r"^\s*psk\s*=\s*([0-9a-fA-F]{64})\s*$", blk, re.M))
+    if not p and not re.search(r"key_mgmt\s*=\s*NONE", blk):
+        return None
+    return s.group(1), (p.group(1) if p else "")
+
+
+def usb_finish(status_text):
+    """Reset the drive's wpa_supplicant.conf to the template and write STATUS.TXT, with the LUN
+    detached so the PC does not see a half-written FAT."""
+    attached = os.path.exists(f"{LUN}/file")
+    if attached:
+        try:
+            with open(f"{LUN}/forced_eject", "w") as f:
+                f.write("1")
+        except OSError as e:
+            log("forced eject failed:", e)
+    with open(f"{RUN}/STATUS.TXT", "w") as f:
+        f.write(status_text.replace("\n", "\r\n") + "\r\n")
+    sh("mcopy", "-o", "-i", IMG, TEMPLATE_CONF, "::/wpa_supplicant.conf", env=MENV)
+    sh("mcopy", "-o", "-i", IMG, f"{RUN}/STATUS.TXT", "::/STATUS.TXT", env=MENV)
+    os.remove(f"{RUN}/STATUS.TXT")
+    if attached:
+        time.sleep(1)
+        try:
+            with open(f"{LUN}/file", "w") as f:
+                f.write(IMG)
+        except OSError as e:
+            log("re-attaching the drive failed:", e)
+
+
+usb_last = None
+usb_stable = 0
+usb_template = None
+
+
+def usb_poll():
+    """('ok', (ssid, psk)) or ('bad', None) once a changed file has stayed the same for two polls."""
+    global usb_last, usb_stable, usb_template
+    if usb_template is None:
+        try:
+            usb_template = open(TEMPLATE_CONF).read().replace("\r", "")
+        except OSError:
+            usb_template = ""
+    cur = usb_read()
+    if cur is None or cur.replace("\r", "") == usb_template:
+        usb_last, usb_stable = cur, 0
+        return None
+    if cur != usb_last:                              # still being written
+        usb_last, usb_stable = cur, 0
+        return None
+    usb_stable += 1
+    if usb_stable < 2:
+        return None
+    usb_last, usb_stable = None, 0
+    net = parse_conf(cur)
+    return ("ok", net) if net else ("bad", None)
+
+
+# ------------------------------------------------------------------ web requests
+
+def inbox_poll():
+    p = f"{INBOX}/request.json"
+    try:
+        with open(p) as f:
+            req = json.load(f)
+    except (OSError, ValueError):
+        return None
+    finally:
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+    return str(req.get("ssid", "")), str(req.get("psk", ""))
+
+
+# ------------------------------------------------------------------ main loop
+
+def handle_requests():
+    """Check web and USB requests; returns True if a network was applied successfully."""
+    usb = usb_poll()
+    if usb and usb[0] == "bad":
+        usb_finish(time.strftime("%Y-%m-%d %H:%M ") + "No usable network block found in wpa_supplicant.conf "
+                   "(remove the # in front of the network lines; ssid and psk in double quotes).")
+        usb = None
+    for source, req in (("web", inbox_poll()), ("usb", usb[1] if usb else None)):
+        if not req:
+            continue
+        was = state["mode"]
+        ok, msg = apply(req[0], req[1], source)
+        if source == "usb":
+            usb_finish(time.strftime("%Y-%m-%d %H:%M ") + msg)
+        if ok:
+            return True
+        # failed: the previous wpa_supplicant.conf is back. If we were online before, reconnect to it;
+        # from setup mode go straight back to the access point.
+        if was != "setup" and configured_networks():
+            client_up()
+            if wait_connected(CONNECT_TIMEOUT):
+                save_state(mode="normal", error=msg, connected_to=link_ssid(), connecting_to=None)
+                eink(msg + "\n\nStill on the previous network.", title="WiFi", dur="3m")
+                return False
+        enter_setup(error=msg)
+    return False
+
+
+def enter_setup(error=None):
+    log("entering setup mode", f"({error})" if error else "")
+    client_down()
+    nets = scan()
+    if not ap_up(nets):
+        ap_down()                                    # fall back to the client; retried after LOST_GRACE
+        client_up()
+        save_state(mode="connecting", error="Could not start the access point.", networks=nets)
+        return
+    save_state(mode="setup", networks=nets, error=error, connected_to=None, connecting_to=None,
+               since=int(time.time()))
+    eink_setup_screen(error)
+
+
+def leave_setup():
+    log("leaving setup mode, retrying the stored network")
+    ap_down()
+    save_state(mode="connecting", error=None)
+    client_up()
+    if wait_connected(CONNECT_TIMEOUT * 2):
+        save_state(mode="normal", connected_to=link_ssid())
+        sh(EINK_SAY, "--clear")
+        return True
+    return False
+
+
+def on_signal(sig, _):
+    global want_setup, want_leave
+    if sig == signal.SIGUSR1:
+        want_setup = True
+    else:
+        want_leave = True
+
+
+def main():
+    global want_setup, want_leave
+    signal.signal(signal.SIGUSR1, on_signal)
+    signal.signal(signal.SIGUSR2, on_signal)
+    setup_inbox()
+    save_state(mode="starting")
+
+    # boot: give the client BOOT_GRACE seconds
+    if configured_networks() and wait_connected(BOOT_GRACE):
+        save_state(mode="normal", connected_to=link_ssid())
+    else:
+        enter_setup()
+
+    lost_since = None
+    while True:
+        time.sleep(3)
+        mode = state["mode"]
+        if want_setup and mode != "setup":
+            want_setup = False
+            enter_setup()
+            continue
+        want_setup = False
+
+        if handle_requests():
+            lost_since = None
+            continue
+
+        if state["mode"] == "setup":
+            idle = ap_clients() == 0
+            if want_leave or (idle and configured_networks()
+                              and time.time() - state.get("since", 0) > IDLE_RETRY):
+                want_leave = False
+                if not leave_setup():
+                    enter_setup(error="The stored network is not reachable.")
+            continue
+        want_leave = False
+
+        if connected():
+            lost_since = None
+            if state.get("mode") != "normal":
+                save_state(mode="normal", connected_to=link_ssid())
+        else:
+            lost_since = lost_since or time.time()
+            if time.time() - lost_since > LOST_GRACE or not configured_networks():
+                lost_since = None
+                enter_setup(error="WiFi connection lost.")
+
+
+if __name__ == "__main__":
+    if os.geteuid() != 0:
+        sys.exit("wifi-setupd must run as root")
+    main()

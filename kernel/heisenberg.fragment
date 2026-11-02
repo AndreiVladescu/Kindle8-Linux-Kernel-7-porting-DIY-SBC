@@ -55,10 +55,13 @@ CONFIG_IKCONFIG_PROC=y
 # L2 (PL310) back on for the L2 experiments (boot 003 proved it was the culprit when disabled)
 CONFIG_CACHE_L2X0=y
 
-# Boot 004: USB gadget Ethernet (CDC-ECM) built in -> usb0 at boot, no modules needed
-CONFIG_USB_ETH=y
-# CONFIG_USB_ETH_RNDIS is not set
-# CONFIG_USB_ETH_EEM is not set
+# USB gadget: configfs composite (CDC-ECM usb0 + mass storage "KINDLE8" for WiFi setup), set up by the
+# usb-gadget init script. The legacy single-function g_ether would hold the UDC, so it is off.
+# (Boot 004 to 2026-11-02: CONFIG_USB_ETH=y.)
+# CONFIG_USB_ETH is not set
+CONFIG_USB_CONFIGFS=y
+CONFIG_USB_CONFIGFS_ECM=y
+CONFIG_USB_CONFIGFS_MASS_STORAGE=y
 
 # L2 experiment F: stock 3.10 is a UP build ("#8 PREEMPT", no SMP). i.MX6SL is single-core and never
 # enables the SCU, but an SMP kernel sets ACTLR.SMP + shareable page tables. Go UP like stock.

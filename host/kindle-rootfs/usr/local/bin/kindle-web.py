@@ -3,20 +3,30 @@
 
   /             status page (refreshes every 10 s)
   /status.json  the same data as JSON
-  anything else static files from /srv/www
+  /setup        WiFi setup form (wifi-setupd): from the setup access point (192.168.4.x) while setup
+                mode is active, and always from the USB link (192.168.7.x)
+  anything else static files from /srv/www; in setup mode, requests from the access point are
+                redirected to /setup so phones open it as a captive portal
 
 Runs as user "www" on port 80 (OpenRC grants only CAP_NET_BIND_SERVICE).
 """
 import html
+import ipaddress
 import json
 import os
 import socket
 import time
+import urllib.parse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get("PORT", "80"))
 ROOT = os.environ.get("WEBROOT", "/srv/www")
 BAT = "/sys/class/power_supply/bd71828_bat"
+SETUP_STATE = "/run/wifi-setup/state.json"
+SETUP_INBOX = "/run/wifi-setup/inbox"
+AP_NET = ipaddress.ip_network("192.168.4.0/24")
+USB_NET = ipaddress.ip_network("192.168.7.0/24")
+LOCK = " \U0001F512"
 
 
 def read(path, default=None):
@@ -97,6 +107,45 @@ def render(s):
     return PAGE.format(hostname=html.escape(s["hostname"]), time=html.escape(s["time"]), rows=tr)
 
 
+SETUP_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>kindle8 WiFi setup</title>
+<style>body{{font:16px/1.5 system-ui,sans-serif;max-width:480px;margin:1.5rem auto;padding:0 1rem;color:#222;background:#f6f6f6}}
+h1{{font-size:1.4rem;margin:0 0 .5rem}}p{{color:#555}}label{{display:block;margin:.8rem 0 .2rem;color:#555}}
+select,input{{width:100%;box-sizing:border-box;font:inherit;padding:.5rem;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222}}
+button{{margin-top:1rem;width:100%;font:inherit;padding:.6rem;border:0;border-radius:6px;background:#0f79d0;color:#fff}}
+.err{{color:#b00020;background:#fde8eb;padding:.5rem .7rem;border-radius:6px}}.ok{{color:#1b5e20;background:#e6f4ea;padding:.5rem .7rem;border-radius:6px}}
+small{{color:#777}}a{{color:#0f79d0}}
+@media(prefers-color-scheme:dark){{body{{background:#161a20;color:#dbe1e8}}p,label,small{{color:#98a2ad}}select,input{{background:#1f252d;color:#dbe1e8;border-color:#3a434e}}
+.err{{background:#3a1d22;color:#ffb4c0}}.ok{{background:#1d3324;color:#a8dab5}}a{{color:#6ab0f3}}}}</style></head><body>
+<h1>WiFi setup</h1>{msg}
+<form method="post" action="/setup">
+<label for="net">Network</label><select id="net" name="ssid_pick">{options}<option value="">Other (type below)</option></select>
+<label for="other">Other network name</label><input id="other" name="ssid_other" autocomplete="off" placeholder="only if not in the list">
+<label for="psk">Password</label><input id="psk" name="psk" type="password" autocomplete="off" placeholder="empty for an open network">
+<button type="submit">Connect</button></form>
+<p><small>{note} <a href="/setup">Reload</a></small></p></body></html>"""
+
+DONE_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>kindle8 WiFi setup</title>
+<style>body{{font:16px/1.5 system-ui,sans-serif;max-width:480px;margin:1.5rem auto;padding:0 1rem;color:#222;background:#f6f6f6}}
+@media(prefers-color-scheme:dark){{body{{background:#161a20;color:#dbe1e8}}}}</style></head><body>
+<h1>Connecting to {ssid}</h1><p>The Kindle now leaves its setup network and joins <b>{ssid}</b>. The e-ink screen
+shows the result and the new IP address. If it fails, the setup network <b>{ap}</b> comes back within about a
+minute with the error, so you can try again.</p></body></html>"""
+
+
+def setup_state():
+    try:
+        with open(SETUP_STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def bars(dbm):
+    return "▮" * (1 + (dbm > -80) + (dbm > -70) + (dbm > -60)) + "▯" * (3 - (dbm > -80) - (dbm > -70) - (dbm > -60))
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
@@ -110,8 +159,71 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _client_net(self):
+        try:
+            ip = ipaddress.ip_address(self.client_address[0])
+        except ValueError:
+            return None
+        return "ap" if ip in AP_NET else "usb" if ip in USB_NET else None
+
+    def _setup_allowed(self, st):
+        net = self._client_net()
+        return net == "usb" or (net == "ap" and st is not None and st.get("mode") in ("setup", "connecting"))
+
+    def _redirect(self, where):
+        self.send_response(302)
+        self.send_header("Location", where)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _setup_page(self, st, msg=""):
+        nets = (st or {}).get("networks", [])
+        opts = "".join(
+            f'<option value="{html.escape(n["ssid"], quote=True)}">{html.escape(n["ssid"])} '
+            f'{bars(n["signal"])}{LOCK if n.get("secure") else ""}</option>' for n in nets)
+        if (st or {}).get("error") and not msg:
+            msg = f'<p class="err">{html.escape(st["error"])}</p>'
+        if (st or {}).get("mode") == "normal" and not msg:
+            msg = f'<p class="ok">Connected to {html.escape(str(st.get("connected_to") or "?"))}.</p>'
+        note = (f"{len(nets)} networks found at the last scan." if nets else
+                "No scan yet: the list is filled when setup mode starts.")
+        return self._send(SETUP_PAGE.format(msg=msg, options=opts, note=note), "text/html; charset=utf-8")
+
+    def do_POST(self):
+        path = self.path.split("?", 1)[0]
+        st = setup_state()
+        if path != "/setup" or not self._setup_allowed(st):
+            self.send_error(404)
+            return
+        n = min(int(self.headers.get("Content-Length", "0") or 0), 4096)
+        form = urllib.parse.parse_qs(self.rfile.read(n).decode("utf-8", "replace"), keep_blank_values=True)
+        ssid = (form.get("ssid_other", [""])[0].strip() or form.get("ssid_pick", [""])[0])
+        psk = form.get("psk", [""])[0]
+        if not ssid or len(ssid.encode()) > 32:
+            return self._setup_page(st, '<p class="err">Pick a network or type its name (up to 32 bytes).</p>')
+        if psk and not 8 <= len(psk) <= 63:
+            return self._setup_page(st, '<p class="err">The password must be 8 to 63 characters.</p>')
+        tmp = os.path.join(SETUP_INBOX, ".request.json")
+        try:
+            with open(tmp, "w") as f:
+                json.dump({"ssid": ssid, "psk": psk}, f)
+            os.replace(tmp, os.path.join(SETUP_INBOX, "request.json"))
+        except OSError as e:
+            return self._setup_page(st, f'<p class="err">Could not hand over the request: {html.escape(str(e))}</p>')
+        ap = (st or {}).get("ap_ssid", "kindle8-setup")
+        return self._send(DONE_PAGE.format(ssid=html.escape(ssid), ap=html.escape(ap)), "text/html; charset=utf-8")
+
     def do_GET(self):
         path = self.path.split("?", 1)[0]
+        st = setup_state()
+        if path == "/setup":
+            if not self._setup_allowed(st):
+                self.send_error(404)
+                return
+            return self._setup_page(st)
+        # captive portal: everything from the access point goes to the setup page
+        if self._client_net() == "ap" and st and st.get("mode") == "setup":
+            return self._redirect("http://192.168.4.1/setup")
         if path in ("/", "/index.html") and not os.path.exists(os.path.join(ROOT, "index.html")):
             return self._send(render(status()), "text/html; charset=utf-8")
         if path == "/status.json":

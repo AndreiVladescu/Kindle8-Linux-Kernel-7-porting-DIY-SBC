@@ -1,0 +1,77 @@
+#!/bin/sh
+# USB gadget (configfs composite) for the Kindle 8 SBC:
+#   ecm.usb0         CDC-ECM Ethernet -> usb0 (192.168.7.2), same MACs as the former g_ether, so the PC's
+#                    "kindle8-usb" connection (interface enx024b38000001) is unchanged
+#   mass_storage.0   4 MB FAT drive "KINDLE8" with wpa_supplicant.conf for WiFi setup (read by wifi-setupd)
+# Must run before networking (usb0 has to exist when /etc/network/interfaces is applied).
+set -u
+CFG=/sys/kernel/config
+G=$CFG/usb_gadget/kindle8
+IMG=/var/lib/wifi-setup/usbdisk.img
+TEMPLATE=/usr/local/share/wifi-setup
+UDC_NAME=ci_hdrc.0
+
+log() { echo "usb-gadget: $*"; logger -t usb-gadget "$*" 2>/dev/null; }
+
+make_image() {
+	mkdir -p "${IMG%/*}"
+	rm -f "$IMG"
+	mkfs.vfat -C -n KINDLE8 "$IMG" 4096 >/dev/null || return 1
+	MTOOLS_SKIP_CHECK=1 mcopy -o -i "$IMG" "$TEMPLATE/README.TXT" "$TEMPLATE/wpa_supplicant.conf" ::/ || return 1
+}
+
+start() {
+	grep -q configfs /proc/filesystems || { log "no configfs"; return 1; }
+	mountpoint -q $CFG || mount -t configfs none $CFG
+	if [ -d $G ]; then log "already configured"; return 0; fi
+	if [ -n "$(cat /sys/class/udc/$UDC_NAME/function 2>/dev/null)" ]; then
+		log "UDC in use by a legacy gadget (kernel with CONFIG_USB_ETH=y): nothing to do"
+		return 0
+	fi
+	[ -f "$IMG" ] || make_image || log "could not create $IMG (no storage function)"
+
+	mkdir -p $G && cd $G || return 1
+	echo 0x1d6b > idVendor          # Linux Foundation
+	echo 0x0104 > idProduct         # Multifunction Composite Gadget
+	echo 0x0100 > bcdDevice
+	echo 0x0200 > bcdUSB
+	mkdir -p strings/0x409
+	echo "Kindle8 SBC" > strings/0x409/manufacturer
+	echo "kindle8"     > strings/0x409/product
+	echo "kindle8"     > strings/0x409/serialnumber
+	mkdir -p configs/c.1/strings/0x409
+	echo "ECM + WiFi setup drive" > configs/c.1/strings/0x409/configuration
+	echo 250 > configs/c.1/MaxPower
+
+	mkdir -p functions/ecm.usb0
+	echo 02:4b:38:00:00:02 > functions/ecm.usb0/dev_addr
+	echo 02:4b:38:00:00:01 > functions/ecm.usb0/host_addr
+	ln -s functions/ecm.usb0 configs/c.1/
+
+	if [ -f "$IMG" ]; then
+		mkdir -p functions/mass_storage.0
+		echo 1 > functions/mass_storage.0/stall
+		echo 1 > functions/mass_storage.0/lun.0/removable
+		echo 0 > functions/mass_storage.0/lun.0/ro
+		echo "Kindle8 WiFi setup drive   " > functions/mass_storage.0/lun.0/inquiry_string
+		echo "$IMG" > functions/mass_storage.0/lun.0/file
+		ln -s functions/mass_storage.0 configs/c.1/
+	fi
+	echo $UDC_NAME > UDC && log "gadget bound to $UDC_NAME (usb0$( [ -f "$IMG" ] && echo ' + KINDLE8 drive'))"
+}
+
+stop() {
+	[ -d $G ] || return 0
+	cd $G || return 1
+	echo "" > UDC 2>/dev/null
+	rm -f configs/c.1/ecm.usb0 configs/c.1/mass_storage.0
+	rmdir configs/c.1/strings/0x409 configs/c.1 functions/ecm.usb0 functions/mass_storage.0 strings/0x409 2>/dev/null
+	cd / && rmdir $G
+}
+
+case "${1:-start}" in
+	start) start ;;
+	stop) stop ;;
+	reset-image) make_image && log "image recreated" ;;
+	*) echo "usage: $0 start|stop|reset-image"; exit 2 ;;
+esac

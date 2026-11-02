@@ -1,0 +1,18 @@
+#!/bin/sh
+# wifi-setup start | stop | status   (control for wifi-setupd)
+#   start   open the setup access point now (kindle8-setup, password on the e-ink panel)
+#   stop    close it and retry the stored network
+#   status  current mode, as seen by the setup web page
+pid=$(for p in /proc/[0-9]*; do
+	tr '\0' ' ' < $p/cmdline 2>/dev/null | grep -q '^/usr/bin/python3 /usr/local/sbin/wifi-setupd' && echo ${p#/proc/}
+done | head -1)
+case "${1:-status}" in
+	start)  [ -n "$pid" ] || { echo "wifi-setupd is not running (rc-service wifi-setup start)"; exit 1; }
+	        kill -USR1 "$pid"; echo "setup mode requested" ;;
+	stop)   [ -n "$pid" ] || { echo "wifi-setupd is not running"; exit 1; }
+	        kill -USR2 "$pid"; echo "leaving setup mode" ;;
+	status) python3 -c 'import json,time;s=json.load(open("/run/wifi-setup/state.json"))
+print("mode:", s.get("mode"));print("connected to:", s.get("connected_to"));print("error:", s.get("error"))
+print("networks seen:", len(s.get("networks",[])), "(last scan)");print("updated:", time.strftime("%H:%M:%S", time.localtime(s.get("updated",0))))' ;;
+	*) echo "usage: wifi-setup start|stop|status"; exit 2 ;;
+esac
