@@ -48,7 +48,7 @@ Shoutout to the guys at [ebookrepairs.com](https://ebookrepairs.com/kindle-tips/
 | Camera | none | CSI connector |
 | Power | Li-ion battery with PMIC charger, runs without mains | 5 V micro-USB only |
 | RTC | yes, in the PMIC, kept by the battery | none |
-| Alpine port | armv7 | armhf |
+| Alpine port | armhf installed (armv7 would also run) | armhf only (armv7 needs ARMv7) |
 
 
 
