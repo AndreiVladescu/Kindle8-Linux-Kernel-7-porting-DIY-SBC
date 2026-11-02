@@ -534,6 +534,29 @@ voltage. Details in `docs/suspend.md`.
 
 ---
 
+## Power button
+
+Mainline's BD71828 MFD driver also covers the BD71815, but it registered
+neither the power-button interrupts nor a power-off handler for it. The
+vendor BD7181x driver reports the button in `INT_STAT_03` bits 2–5 (long,
+mid, short, press). Patch 0005 adds these interrupts, and the short push
+becomes a `KEY_POWER` input device. Patch 0006 adds `pm_power_off`, following
+the vendor `bd7181x_chip_poweroff()`: restore the BUCK1/BUCK2 voltage
+registers, stop the coulomb counter, then write `PWRCTRL` 0x22 and 0x23.
+
+Userspace is busybox `acpid`, whose stock Alpine action
+`/etc/acpi/PWRF/00000080` runs `poweroff`. The resulting behaviour:
+
+| Action | Result |
+|---|---|
+| short press while running | clean shutdown, PMIC cuts all rails (also with the charger connected) |
+| press of about a second while off | PMIC powers up, normal boot |
+| short tap while off | nothing |
+| long hold | PMIC hardware power cycle (`Reset cause: POR`), independent of Linux |
+
+The charge LED is driven by the PMIC's charger hardware and is not
+controlled from Linux (amber while charging, green when full).
+
 ## Current state
 
 | Function | Status |
@@ -543,7 +566,7 @@ voltage. Details in `docs/suspend.md`.
 | Storage | eMMC 8-bit HS-DDR; ext4 root, 2.7 GB free |
 | Network | WiFi (brcmfmac) with mDNS `kindle8.local`; USB Ethernet with automatic recovery |
 | Bluetooth | BCM43430A1 via hci_uart/btbcm, BlueZ |
-| Power | BD71815: RTC, charger and battery readings, capacity estimate; regulators read-only |
+| Power | BD71815: RTC, charger and battery readings, capacity estimate, power button and power-off |
 | Display | e-ink 800×600 via FP9928 + EPDC (mxc-epdc), status screen every 5 min |
 | Watchdog | imx2_wdt |
 
@@ -556,8 +579,9 @@ web server all running.*
 ## Open items
 
 - The battery OCV table needs calibration from a full discharge (logger and table builder are in place, see `docs/battery.md`).
-- Suspend works (deep and standby, timed wake via the SNVS RTC). Wake from the power button and lower
-  suspend voltages are not done yet, see `docs/suspend.md`.
+- Suspend works (deep and standby, timed wake via the SNVS RTC). Lower suspend voltages are not done
+  yet, see `docs/suspend.md`. The power button is used for power on/off only, not as a wake source.
+- The cover hall sensor (GPIO4_IO16, `SW_LID`) is described in the DT but did not react to a magnet; untested.
 
 ## Reproducing
 
