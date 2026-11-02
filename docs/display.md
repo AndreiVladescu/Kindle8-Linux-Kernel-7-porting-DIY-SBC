@@ -122,3 +122,14 @@ every 5 minutes (`EINK_INTERVAL`).
   cursor otherwise refreshes the panel continuously (7 000+ EPDC IRQs) and keeps HV/VCOM on. With it detached, one
   update costs 2 IRQs and the driver's power-down (pwrdown_delay 0) switches `epd-vposneg`/`epd-vcom` off right after.
   TODO: drop `CONFIG_FRAMEBUFFER_CONSOLE` at the next kernel build.
+
+## Per-minute redraw and eink-say (2026-11-02)
+- `host/kindle-rootfs/usr/local/lib/kindle-eink/einklib.py`: shared code. `Panel.show()` compares with the previous
+  frame and `pwrite()`s only changed framebuffer rows; the fbdev deferred I/O turns that into a damage rectangle,
+  and mxc-epdc sends it as `UPDATE_MODE_PARTIAL` + `WAVEFORM_MODE_AUTO` (AUTOWV LUT = GC16). Measured: a
+  minute tick (footer clock) = 2 EPDC IRQs. `Panel.flash()` = black, white, image, against ghosting.
+- `kindle-eink.py` sleeps to the next minute boundary; SIGUSR1 = redraw now, SIGUSR2 = clean refresh now.
+  Settings in `/etc/conf.d/kindle-eink` (`EINK_INTERVAL`, `EINK_CLEAN_MIN`, `EINK_SKIP`), exported by the init script.
+- `eink-say`: text layout over the usable bands (top 24..487, bottom 603..754, footer below), auto-fit from 160 px
+  down in 8 % steps; short texts stay in the top band if that costs < 30 % size; `--mono` fits the longest line
+  without wrapping first. `--preview out.png` renders without touching the panel.

@@ -477,8 +477,29 @@ continuously, with the high voltage on the whole time (over 7000 EPDC interrupts
 update costs two interrupts, and the driver switches HV and VCOM off right after it.
 
 A small service (`kindle-eink`) renders the same data as the web server into a portrait image with Pillow,
-rotates it to the panel's native orientation, and writes it to `/dev/fb0` every five minutes. The layout leaves
+rotates it to the panel's native orientation, and writes it to `/dev/fb0` on every minute. The layout leaves
 the cracked band of the panel empty.
+
+The EPDC driver sends each damaged area as a partial GC16 update, so the service writes only the framebuffer
+rows that changed since the last frame: a minute tick redraws the clock and costs two interrupts, without a
+full-screen flash. Partial updates leave faint ghosting, so once an hour (`EINK_CLEAN_MIN` in
+`/etc/conf.d/kindle-eink`) the panel gets a black and a white frame before the next image.
+
+`eink-say` puts arbitrary text on the panel instead of the status page. It wraps the text and picks the
+largest font that fits the 600×800 area, keeps short texts above the cracked band, and keeps columns intact
+with `--mono`:
+
+```
+eink-say "Backup running"                  # until cleared
+eink-say -t "Build" -c "OK at 14:02"       # title, centred
+eink-say --for 10m "Back in 10 minutes"    # then the status page returns
+df -h / | eink-say --mono -t Disk          # stdin, monospace
+eink-say --clear                           # status page
+eink-say --refresh                         # clean refresh now
+```
+
+The message is stored in `/var/lib/kindle-eink/message.json` and shown by the service, which keeps a small
+footer with hostname, IP and time on it.
 
 <img src="./img/eink-status.jpeg" width="100%" alt="The Kindle's e-ink panel showing its status screen: hostname kindle8, IP address, uptime, load, memory and disk above a blank band over the cracked area, then SoC temperature, battery and WiFi signal">
 
@@ -587,7 +608,7 @@ controlled from Linux (amber while charging, green when full).
 | Network | WiFi (brcmfmac) with mDNS `kindle8.local`; USB Ethernet with automatic recovery |
 | Bluetooth | BCM43430A1 via hci_uart/btbcm, BlueZ |
 | Power | BD71815: RTC, charger and battery readings, capacity estimate, power button and power-off |
-| Display | e-ink 800×600 via FP9928 + EPDC (mxc-epdc), status screen every 5 min |
+| Display | e-ink 800×600 via FP9928 + EPDC (mxc-epdc), status screen every minute, `eink-say` for messages |
 | Watchdog | imx2_wdt |
 
 <img src="./img/htop.png" width="100%" alt="htop on the Kindle: 20.8 MB of 495 MB RAM in use, load 0.40, with wpa_supplicant, udhcpc, dbus, avahi, bluetoothd, chronyd, dropbear, getty, usb-link-watchdog and the Python web server running">
