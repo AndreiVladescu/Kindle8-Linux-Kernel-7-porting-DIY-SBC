@@ -31,6 +31,26 @@ partitions on the eMMC, and the full original image is kept.
 Everything here was done over the serial console and the micro-USB port, since the screen couldn't be used to click anything.
 Shoutout to the guys at [ebookrepairs.com](https://ebookrepairs.com/kindle-tips/how-can-i-connect-a-serial-port-to-a-kindle/) for making this RE easier on the PCB side.
 
+### Compared to a Raspberry Pi Zero W
+
+| | Kindle 8 (this board) | Raspberry Pi Zero W |
+|---|---|---|
+| SoC | NXP i.MX6SoloLite | Broadcom BCM2835 |
+| CPU | 1× Cortex-A9 (ARMv7-A, NEON, VFPv3), 996 MHz, 1104 MHz overclocked | 1× ARM1176JZF-S (ARMv6, VFPv2, no NEON), 1 GHz |
+| L2 cache | 256 KB PL310 | 128 KB (used by the GPU by default) |
+| RAM | 512 MiB LPDDR2 | 512 MB LPDDR2 |
+| Storage | 4 GB eMMC (3.64 GiB), soldered | microSD |
+| WiFi / Bluetooth | BCM43430 (2.4 GHz 802.11n, Bluetooth 4.1) | CYW43438 (2.4 GHz 802.11n, Bluetooth 4.1), same chip family |
+| Display | 6" 800×600 e-ink (EPDC) | mini-HDMI |
+| Input | power button, IR touch (zForce, not working yet) | none on board |
+| USB | 1× micro-USB OTG, used as USB Ethernet and for charging | 1× micro-USB OTG, plus a separate power-only micro-USB |
+| GPIO | none exposed; 1.8 V UART test pads | 40-pin header (3.3 V), unpopulated |
+| Camera | none | CSI connector |
+| Power | Li-ion battery with PMIC charger, runs without mains | 5 V micro-USB only |
+| RTC | yes, in the PMIC, kept by the battery | none |
+| Alpine port | armv7 | armhf |
+
+
 
 ---
 
