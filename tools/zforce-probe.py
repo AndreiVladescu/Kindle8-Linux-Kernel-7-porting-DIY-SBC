@@ -50,6 +50,23 @@ cmd("ledlevel Y", 0x1C, 0x01)
 cmd("resolution", 0x02, 600 & 0xff, 600 >> 8, 800 & 0xff, 800 >> 8)
 cmd("scanfreq", 0x08, 45, 0, 60, 0, 60, 0)
 cmd("setconfig", 0x03, 0x01, 0, 0, 0)
+if len(sys.argv) > 2 and sys.argv[1] == "monitor":
+    # print photodiode signal per axis once a second: sum, max and number of non-zero paths
+    end = time.time() + float(sys.argv[2])
+    while time.time() < end:
+        line = time.strftime("%H:%M:%S")
+        for ax, name in ((0, "X"), (1, "Y")):
+            os.write(fd, bytes([0xEE, 2, 0x1C, ax]))
+            r = read_frame(1.0)
+            if isinstance(r, bytes) and len(r) > 3:
+                pd = [v for i in range(3, len(r), 3) for v in r[i + 1:i + 3]]
+                lv = [r[i] for i in range(3, len(r), 3)]
+                line += f"  {name}: sum={sum(pd):5d} max={max(pd):3d} lit={sum(1 for v in pd if v):2d}/{len(pd)} led=" + "".join("%x" % (v >> 4) for v in lv)
+            else:
+                line += f"  {name}: {r}"
+        print(line, flush=True)
+        time.sleep(1)
+    sys.exit(0)
 t = float(sys.argv[1]) if len(sys.argv) > 1 else 0
 if t:
     os.write(fd, bytes([0xEE, 1, 0x04]))      # touch data request: start scanning

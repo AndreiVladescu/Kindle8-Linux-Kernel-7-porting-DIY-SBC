@@ -602,6 +602,9 @@ web server all running.*
 - Suspend works (deep and standby, timed wake via the SNVS RTC). Lower suspend voltages are not done
   yet, see `docs/suspend.md`. The power button is used for power on/off only, not as a wake source.
 - The cover hall sensor (GPIO4_IO16, `SW_LID`) is described in the DT but did not react to a magnet; untested.
+- Touch: the zForce controller (TI MSP430 + Neonode NN1101, I2C2 @0x51) works with mainline `zforce_ts` and its IR
+  LEDs fire, but every photodiode reads 0, so no touches are detected. Most likely receiver-side hardware damage,
+  see `docs/touch.md`. This model has no front light; the PMIC's WLED output is unconnected (`docs/peripherals.md`).
 
 ## Reproducing
 

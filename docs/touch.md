@@ -37,4 +37,12 @@
   no touch frames.
 - mdev does not load modules by modalias here; `zforce_ts` is listed in `/etc/modules` like the display modules.
 - Kernel #18 (touch DT) is in the normal slot since 2026-11-02.
-- Open: the optical path (bezel flex / LED and photodiode strips); axis orientation untested.
+- The LED/photodiode rows sit on the PCB edges (three on the back: left, right, top; one on the front: bottom); the
+  bezel's light guides turn the beams across the glass. Through a phone camera the IR LEDs show a faint, irregular
+  flicker while scanning, so the emitters are driven and work.
+- `tools/zforce-probe.py monitor <s>` logs the photodiode signals of all 52 paths (22 X, 30 Y) once a second:
+  0 on every path in every sample, also with the bezel clamped and pressed down along the edges.
+- Conclusion: controller and emitters work, nothing reaches (or is read from) the photodiodes. A receiver-side
+  hardware fault (photodiode row or its traces/connection, possibly from the same damage as the panel) or
+  misaligned light guides. Touch tests stopped here; the DT node and `zforce_ts` stay in place, so touch should
+  work without changes if the optics are repaired. Axis orientation untested.
