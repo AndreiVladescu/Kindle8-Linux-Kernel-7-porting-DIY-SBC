@@ -141,3 +141,11 @@ black/white refresh, then waits 2.5 s for the update to finish. busybox init run
 runlevel for poweroff and reboot, so a reboot shows it too until the status page returns.
 Auto-fit fix: a font size that would split a word is rejected (`WordTooLong`), so words are never broken
 unless a single word is wider than the panel at 14 px.
+
+## USB screen (2026-11-02)
+When a PC attaches over USB (UDC state `configured`, polled every 2 s), `kindle-eink` shows a USB trident,
+"USB connected", the KINDLE8 drive, `ssh root@192.168.7.2` and `http://192.168.7.2/setup` for
+`EINK_USB_SCREEN_MIN` minutes (default 3, 0 = while attached); then the status page returns with "· USB" in its
+header line. `eink-say` messages (and so the WiFi setup screen) take priority.
+First shutdown-screen test failed: the deployed `/etc/init.d/kindle-eink` had lost its executable bit (the repo
+copy was 0644), so OpenRC could not run it; fixed in git (overlay scripts are 0755 now).
