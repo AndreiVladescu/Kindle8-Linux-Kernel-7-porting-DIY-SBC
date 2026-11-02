@@ -521,22 +521,23 @@ result goes to `STATUS.TXT` and the file is reset so the password does not stay 
 `docs/wifi-setup.md`.
 
 <table>
-<tr><th width="33%">1. No WiFi</th><th width="33%">2. Network chosen</th><th width="33%">Or: over USB</th></tr>
+<tr><th width="25%">1. No WiFi</th><th width="25%">2. Network chosen</th><th width="25%">Or: over USB</th><th width="25%">Shutdown</th></tr>
 <tr>
 <td><img src="./img/kindle_wifi_setup.jpeg" width="100%" alt="E-ink panel titled WiFi setup: join kindle8-setup with the shown password, then open http://192.168.4.1, or plug in USB and edit wpa_supplicant.conf on the KINDLE8 drive"></td>
 <td><img src="./img/kindle_wifi_connecting.jpeg" width="100%" alt="E-ink panel titled WiFi setup showing Connecting to and the chosen network name"></td>
 <td><img src="./img/kindle_usb.jpeg" width="100%" alt="E-ink panel with a USB symbol, USB connected, the KINDLE8 drive, ssh root@192.168.7.2 and http://192.168.7.2/setup"></td>
+<td><img src="./img/kindle_poweroff.jpeg" width="100%" alt="E-ink panel with a face with X eyes and the tongue out, Powered off, Mon 02 Nov, 11:18, Hold the power button to start"></td>
 </tr>
 <tr>
 <td>The Kindle opens its own network <code>kindle8-setup</code>. A phone that joins it is sent to the setup page by the captive-portal check.</td>
 <td>After the form is sent, the setup network goes away and the Kindle joins the chosen one (12 s in the test). The new IP stays on the panel for a minute, then the status page returns.</td>
 <td>When a PC attaches, the panel shows the USB link and the KINDLE8 drive for 3 minutes. <code>http://192.168.7.2/setup</code> works over the cable at any time.</td>
+<td>After <code>poweroff</code> or the power button, the last image is this face and the time it went off. The panel keeps it without power.</td>
 </tr>
 </table>
 
-On shutdown, from `poweroff` or the power button, the panel is left with a face with X eyes and its tongue out
-and the time it went off, so a board that keeps its last image without power does not look like it is
-still running.
+The shutdown screen exists because e-ink keeps its last image without power: without it, a board that is off
+looks exactly like one that is still running.
 
 ## CPU frequency
 
