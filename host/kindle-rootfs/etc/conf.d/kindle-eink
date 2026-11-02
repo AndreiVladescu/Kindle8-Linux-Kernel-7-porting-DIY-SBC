@@ -1,0 +1,10 @@
+# kindle-eink: e-ink status screen settings (exported to /usr/local/bin/kindle-eink.py)
+
+# redraw period in seconds; 60 = on every minute
+EINK_INTERVAL=60
+
+# clean black/white refresh against ghosting every N minutes (0 = never; `eink-say --refresh` on demand)
+EINK_CLEAN_MIN=60
+
+# damaged rows of this panel (portrait y range) that are left blank
+EINK_SKIP=495-595

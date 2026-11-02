@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""Write text on the Kindle's e-ink panel (600x800 portrait), sized to fit.
+
+  eink-say "Backup running"                  largest font that fits, until cleared
+  eink-say -t "Build" -c "OK at 14:02"       title + centred text
+  eink-say --for 10m "Back in 10 minutes"    message expires, then the status page returns
+  df -h / | eink-say --mono                  text from stdin, monospace (keeps columns)
+  eink-say -s 40 "fixed size"                font size in px (error if it does not fit)
+  eink-say --clear                           back to the status page
+  eink-say --refresh                         clean black/white refresh now (removes ghosting)
+  eink-say --preview out.png "text"          render to a PNG instead of the panel
+
+The text avoids the damaged rows (EINK_SKIP) and the margins. With the kindle-eink service running
+the message is stored in /var/lib/kindle-eink/message.json and shown at the next redraw (triggered
+immediately); the service keeps a small footer with hostname, IP and time updated every minute.
+Without the service the text is drawn directly.
+"""
+import argparse
+import os
+import re
+import signal
+import sys
+import time
+
+sys.path.insert(0, "/usr/local/lib/kindle-eink")
+import einklib as E  # noqa: E402
+
+
+def duration(s):
+    m = re.fullmatch(r"(\d+)([smhd]?)", s)
+    if not m:
+        raise argparse.ArgumentTypeError("use e.g. 30s, 10m, 2h, 1d")
+    return int(m.group(1)) * {"": 1, "s": 1, "m": 60, "h": 3600, "d": 86400}[m.group(2)]
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Write text on the e-ink panel.",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
+    ap.add_argument("text", nargs="*", help="text (default: read stdin); \\n starts a new line")
+    ap.add_argument("-t", "--title", help="bold heading above the text")
+    ap.add_argument("-s", "--size", type=int, help="font size in px (default: largest that fits)")
+    ap.add_argument("-m", "--mono", action="store_true", help="monospace font")
+    ap.add_argument("-c", "--center", action="store_true", help="centre the text")
+    ap.add_argument("--for", dest="dur", type=duration, help="show for this long, e.g. 30s, 10m, 2h")
+    ap.add_argument("--no-footer", action="store_true", help="no hostname/IP/time footer")
+    ap.add_argument("--clear", action="store_true", help="remove the message (status page returns)")
+    ap.add_argument("--refresh", action="store_true", help="clean black/white refresh now")
+    ap.add_argument("--preview", metavar="PNG", help="render to a PNG file, do not touch the panel")
+    a = ap.parse_args()
+
+    pid = E.daemon_pid()
+
+    if a.clear or a.refresh:
+        if a.clear:
+            E.clear_message()
+        if pid:
+            os.kill(pid, signal.SIGUSR2 if a.refresh else signal.SIGUSR1)
+        elif a.refresh:
+            print("kindle-eink service not running; nothing to refresh", file=sys.stderr)
+        return 0
+
+    text = " ".join(a.text) if a.text else sys.stdin.read()
+    text = text.replace("\\n", "\n").rstrip("\n").expandtabs(4)
+    if not text.strip():
+        ap.error("no text given")
+
+    msg = {"text": text, "title": a.title, "size": a.size, "mono": a.mono, "center": a.center,
+           "footer": not a.no_footer, "set": time.time()}
+    if a.dur:
+        msg["expires"] = time.time() + a.dur
+
+    # render once here: catches "does not fit" before anything is stored
+    footer = None if a.no_footer else "kindle8 · 0.0.0.0 · 00:00"
+    try:
+        img = E.render_text(text, title=a.title, size=a.size, mono=a.mono, center=a.center, footer=footer)
+    except ValueError as e:
+        print("eink-say:", e, file=sys.stderr)
+        return 1
+
+    if a.preview:
+        img.save(a.preview)
+        return 0
+
+    if pid:
+        E.write_message(msg)
+        os.kill(pid, signal.SIGUSR1)
+    else:                                       # no service: draw directly (no expiry handling)
+        panel = E.Panel()
+        panel.activate()
+        panel.show(img, force=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

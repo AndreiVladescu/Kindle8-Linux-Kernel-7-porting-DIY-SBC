@@ -1,10 +1,13 @@
 #!/sbin/openrc-run
-description="E-ink status screen (device stats on the Kindle's panel, every 5 min)"
+description="E-ink status screen (device stats or an eink-say message, redrawn every minute)"
 command=/usr/bin/python3
 command_args="/usr/local/bin/kindle-eink.py"
 supervisor=supervise-daemon
 output_logger="logger -t kindle-eink"
 error_logger="logger -t kindle-eink"
+
+# settings from /etc/conf.d/kindle-eink
+export EINK_INTERVAL EINK_CLEAN_MIN EINK_SKIP EINK_STATUS_URL EINK_MARGIN_LEFT EINK_MARGIN_RIGHT
 
 depend() {
 	need kindle-web
@@ -21,5 +24,6 @@ start_pre() {
 	for v in /sys/class/vtconsole/vtcon*; do
 		grep -q "frame buffer" "$v/name" 2>/dev/null && echo 0 > "$v/bind"
 	done
+	mkdir -p /var/lib/kindle-eink
 	return 0
 }
