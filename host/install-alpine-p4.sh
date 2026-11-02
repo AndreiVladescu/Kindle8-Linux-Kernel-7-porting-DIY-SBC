@@ -24,10 +24,12 @@ mkdir -p $MNT/etc/apk
 cp -a /etc/apk/keys $MNT/etc/apk/
 cp /etc/apk/repositories $MNT/etc/apk/repositories
 apk --root $MNT --initdb -q add alpine-base openrc busybox-openrc dropbear dropbear-openrc \
-    e2fsprogs chrony ca-certificates
+    e2fsprogs chrony ca-certificates tzdata
 
 log "configure"
 echo kindle8 > $MNT/etc/hostname
+TZ_NAME=${TZ_NAME:-Europe/Bucharest}
+ln -sf /usr/share/zoneinfo/$TZ_NAME $MNT/etc/localtime; echo $TZ_NAME > $MNT/etc/timezone   # RTC stays UTC
 printf '127.0.0.1\tlocalhost\n127.0.1.1\tkindle8\n' > $MNT/etc/hosts
 cat > $MNT/etc/network/interfaces <<'EOF'
 auto lo
