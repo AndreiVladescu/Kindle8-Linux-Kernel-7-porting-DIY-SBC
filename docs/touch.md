@@ -32,4 +32,9 @@
   Every one of the 11 X and 15 Y LEDs is driven at the maximum (15/15) and every photodiode reads 0: the controller
   works, but no IR light reaches the receivers. Most likely the optical frame (LED/photodiode strips in the bezel) is
   not connected or not in place, rather than a software problem.
-- Open: the module is not auto-loaded at boot (`modprobe zforce_ts` by hand); axis orientation untested.
+- Repeated after partly reassembling the case (bezel in place, not fully clamped), and after 5 s of scanning
+  (`0x04` touch data request) plus a forced LED calibration (`0x1A` -> `1a 00`): identical, all photodiodes 0,
+  no touch frames.
+- mdev does not load modules by modalias here; `zforce_ts` is listed in `/etc/modules` like the display modules.
+- Kernel #18 (touch DT) is in the normal slot since 2026-11-02.
+- Open: the optical path (bezel flex / LED and photodiode strips); axis orientation untested.

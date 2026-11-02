@@ -52,10 +52,15 @@ cmd("scanfreq", 0x08, 45, 0, 60, 0, 60, 0)
 cmd("setconfig", 0x03, 0x01, 0, 0, 0)
 t = float(sys.argv[1]) if len(sys.argv) > 1 else 0
 if t:
-    os.write(fd, bytes([0xEE, 1, 0x04]))      # touch data request
+    os.write(fd, bytes([0xEE, 1, 0x04]))      # touch data request: start scanning
     end = time.time() + t; n = 0
     while time.time() < end:
         r = read_frame(0.5)
         if r is not None:
             n += 1; print(time.strftime("%H:%M:%S"), "frame", r.hex(" ") if isinstance(r, bytes) else r, flush=True)
     print("frames:", n)
+    cmd("ledlevel X", 0x1C, 0x00)            # levels again, after scanning
+    cmd("ledlevel Y", 0x1C, 0x01)
+    cmd("force calib", 0x1A, timeout=3)
+    cmd("ledlevel X", 0x1C, 0x00)
+    cmd("ledlevel Y", 0x1C, 0x01)
