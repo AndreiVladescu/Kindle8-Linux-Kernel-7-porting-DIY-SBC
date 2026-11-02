@@ -180,6 +180,9 @@ def sleep_until_next_tick():
     """Sleep to the next INTERVAL boundary (on the minute for 60 s); SIGUSR1/2, a USB attach/detach
     and the end of the USB screen period wake early."""
     end = time.time() + INTERVAL - (time.time() % INTERVAL) + 0.2
+    msg = E.read_message()
+    if msg and msg.get("expires") and msg["expires"] + 0.2 < end:
+        end = msg["expires"] + 0.2                  # an expiring message goes away on time
     usb_end = usb_since + USB_SCREEN_MIN * 60 if usb_since is not None and USB_SCREEN_MIN else None
     while time.time() < end:
         if wake.wait(min(2.0, max(end - time.time(), 0.05))):

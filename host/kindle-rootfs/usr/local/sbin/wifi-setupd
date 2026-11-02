@@ -342,7 +342,7 @@ def apply(ssid, psk, source):
         except OSError:
             pass
         save_state(mode="normal", error=None, connected_to=ssid, connecting_to=None)
-        eink(f"Connected to\n{ssid}\n\nIP {ip}", title="WiFi", dur="3m")
+        eink(f"Connected to\n{ssid}\n\nIP {ip}", title="WiFi", dur="1m")
         return True, f"Connected to {ssid}, IP {ip}."
     log("connection failed, restoring the previous configuration")
     restore_wpa_conf()
@@ -473,7 +473,7 @@ def handle_requests():
             client_up()
             if wait_connected(CONNECT_TIMEOUT):
                 save_state(mode="normal", error=msg, connected_to=link_ssid(), connecting_to=None)
-                eink(msg + "\n\nStill on the previous network.", title="WiFi", dur="3m")
+                eink(msg + "\n\nStill on the previous network.", title="WiFi", dur="1m")
                 return False
         enter_setup(error=msg)
     return False
