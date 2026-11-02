@@ -109,13 +109,21 @@ def render_status(st):
         ("Disk", f'{st.get("disk_free_mb", 0) / 1024:.1f} GB free'),
         ("SoC", f'{st.get("soc_temp_c", "?")} °C'),
         ("Battery", f'{b.get("capacity_pct", "?")} % {b.get("status", "")}'),
-        ("WiFi", f'{w.get("signal_dbm", "?")} dBm' if w else "off"),
+        ("WiFi", (w.get("ssid") or "?", f' · {w.get("signal_dbm", "?")} dBm') if w else "off"),
     ]
     row_h, y = 58, 172
     for label, value in rows:
         if y + row_h > E.SKIP[0] and y < E.SKIP[1]:                # jump over the damaged band
             y = E.SKIP[1] + 12
         d.text((m, y + 6), label, font=F_LABEL, fill=90)
+        if isinstance(value, tuple):                              # (name, suffix): shorten the name to fit
+            name, suffix = value
+            room = E.W - m - (m + d.textlength(label, font=F_LABEL) + 24)
+            if d.textlength(name + suffix, font=F_VALUE) > room:
+                while name and d.textlength(name + "…" + suffix, font=F_VALUE) > room:
+                    name = name[:-1]
+                name += "…"
+            value = name + suffix
         tw = d.textlength(str(value), font=F_VALUE)
         d.text((E.W - m - tw, y + 2), str(value), font=F_VALUE, fill=0)
         y += row_h

@@ -14,7 +14,9 @@ import html
 import ipaddress
 import json
 import os
+import re
 import socket
+import subprocess
 import time
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -37,6 +39,21 @@ def read(path, default=None):
         return default
 
 
+def wifi_ssid():
+    """SSID of the network wlan0 is associated with, or None."""
+    try:
+        out = subprocess.run(["iw", "dev", "wlan0", "link"], capture_output=True, text=True, timeout=5).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    m = re.search(r"^\s*SSID: (.*)$", out, re.M)
+    if not m:
+        return None
+    # iw prints non-printable bytes as \xNN
+    raw = re.sub(rb"\\x([0-9a-fA-F]{2})", lambda x: bytes([int(x.group(1), 16)]),
+                 m.group(1).encode("utf-8", "surrogateescape"))
+    return raw.decode("utf-8", "replace")
+
+
 def status():
     up = float(read("/proc/uptime", "0").split()[0])
     mem = {}
@@ -47,7 +64,7 @@ def status():
     for line in (read("/proc/net/wireless", "") or "").splitlines()[2:]:
         p = line.split()
         if p and p[0].rstrip(":") == "wlan0":
-            wifi = {"signal_dbm": int(float(p[3]))}
+            wifi = {"signal_dbm": int(float(p[3])), "ssid": wifi_ssid()}
     soc = None  # pick the SoC sensor by type: zone numbering varies (zone0 is the battery here)
     for z in sorted(os.listdir("/sys/class/thermal")):
         if read(f"/sys/class/thermal/{z}/type") == "imx_thermal_zone":
@@ -101,7 +118,7 @@ def render(s):
         ("Disk /", f'{s["disk_free_mb"]} / {s["disk_total_mb"]} MB free'),
         ("SoC temperature", f'{s["soc_temp_c"]} °C' if s["soc_temp_c"] is not None else "n/a"),
         ("Battery", f'{b["capacity_pct"]} % ({b["status"]}, {b["voltage_v"]} V, {b["temp_c"]} °C)'),
-        ("WiFi signal", f'{w["signal_dbm"]} dBm' if w else "not connected"),
+        ("WiFi", f'{w.get("ssid") or "?"} ({w["signal_dbm"]} dBm)' if w else "not connected"),
     ]
     tr = "".join(f"<tr><td>{html.escape(k)}</td><td>{html.escape(str(v))}</td></tr>" for k, v in rows)
     return PAGE.format(hostname=html.escape(s["hostname"]), time=html.escape(s["time"]), rows=tr)
